@@ -1,0 +1,96 @@
+import type { Maybe } from "Maybe"
+import type { Wish } from "Wish"
+
+import type { Config } from "@/Config"
+
+import { Left, Right } from "Either"
+import { always } from "Function"
+import J from "Json/Parse"
+import { Just, Nothing } from "Maybe"
+import { bad, mapRej } from "Wish"
+
+import Dependency from "@/Dependency"
+import Version from "@/Version"
+
+
+
+export alias MadlibDotJson = {
+  bin :: Maybe String,
+  dependencies :: Maybe (List Dependency.Dependency),
+  hooks :: Maybe (Dictionary String String),
+  importAliases :: Maybe (Dictionary String String),
+  madlibVersion :: Maybe String,
+  main :: String,
+  name :: String,
+  version :: Version.Version,
+}
+
+
+makeMadlibDotJson :: String
+  -> String
+  -> Maybe String
+  -> Maybe (List Dependency.Dependency)
+  -> String
+  -> Maybe String
+  -> Maybe (Dictionary String String)
+  -> Maybe (Dictionary String String)
+  -> J.Parser MadlibDotJson
+makeMadlibDotJson = (
+  name,
+  version,
+  madlibVersion,
+  dependencies,
+  main,
+  bin,
+  importAliases,
+  hooks
+) => where(Version.parse(version)) {
+  Just(v) =>
+    J.succeed({ name, version: v, madlibVersion, dependencies, main, bin, importAliases, hooks })
+
+  Nothing =>
+    J.fail(
+      `The version in the madlib.json file is not valid, you provided '${
+        version
+      }', but it should have the form x.y.z where x, y and z are numbers.`,
+    )
+}
+
+
+parser :: J.Parser MadlibDotJson
+parser = J.chain8(
+  makeMadlibDotJson,
+  J.field("name", J.string),
+  J.field("version", J.string),
+  J.maybe(J.field("madlibVersion", J.string)),
+  J.maybe(Dependency.dependencyParser),
+  J.field("main", J.string),
+  J.maybe(J.field("bin", J.string)),
+  J.maybe(J.field("importAliases", J.dict(J.string))),
+  J.maybe(J.field("hooks", J.dict(J.string))),
+)
+
+
+parse :: String -> Wish String MadlibDotJson
+export parse = pipe(
+  J.parse(parser),
+  where {
+    Left(e) =>
+      bad(e)
+
+    Right(a) =>
+      of(a)
+  },
+)
+
+
+load :: Config -> String -> Wish String MadlibDotJson
+export load = (config, path) => pipe(
+  config.readFile,
+  mapRej(always(`madlib.json file not found at path '${path}'`)),
+  chain(parse),
+  mapRej(
+    (e) => `madlib.json file at path '${path}' is malformed
+Error: ${e}`,
+  ),
+)(path)

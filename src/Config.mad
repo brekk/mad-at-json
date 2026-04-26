@@ -1,0 +1,35 @@
+import type { Error, Response } from "Http"
+import type { CommandOptions, CommandResult } from "Process"
+import type { Wish } from "Wish"
+
+import Directory from "Directory"
+import File from "File"
+import { getBytes } from "Http"
+import IO from "IO"
+import Process from "Process"
+import { exec } from "Process"
+
+
+
+export alias Config = {
+  exec :: String -> List String -> Wish CommandResult CommandResult,
+  execWithCmd :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult,
+  exists :: String -> Wish {} Boolean,
+  getBytes :: String -> Wish (Error ByteArray) (Response ByteArray),
+  readDir :: String -> Wish IO.Error (List String),
+  readFile :: String -> Wish IO.Error String,
+  writeBytes :: String -> ByteArray -> Wish IO.Error {},
+  writeFile :: String -> String -> Wish IO.Error {},
+}
+
+defaultConfig :: Config
+export defaultConfig = {
+  readFile: File.read,
+  writeFile: File.write,
+  writeBytes: File.writeBytes,
+  readDir: Directory.read,
+  execWithCmd: exec,
+  exec: exec($, $, Process.DEFAULT_COMMAND_OPTIONS),
+  exists: File.exists,
+  getBytes,
+}

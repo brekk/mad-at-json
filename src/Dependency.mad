@@ -1,0 +1,44 @@
+import type { Maybe } from "Maybe"
+
+import type { VersionRange } from "@/Version"
+
+import J from "Json/Parse"
+import { Nothing } from "Maybe"
+import {} from "Wish"
+
+import { sanitizeUrl } from "./URL"
+import Version from "@/Version"
+
+
+
+export alias Dependency = {
+  description :: Maybe String,
+  name :: Maybe String,
+  sanitizedUrl :: String,
+  url :: String,
+  versionRange :: VersionRange,
+}
+
+
+
+dependencyParser :: J.Parser (List Dependency)
+export dependencyParser = J.field(
+  "dependencies",
+  J.list(
+    J.map4(
+      (url, description, maybeMinVersion, maybeMaxVersion) => (
+        {
+          url,
+          description,
+          versionRange: Version.createRange(maybeMinVersion, maybeMaxVersion),
+          name: Nothing,
+          sanitizedUrl: sanitizeUrl(url),
+        }
+      ),
+      J.field("url", J.string),
+      J.field("description", J.maybe(J.string)),
+      J.map1(chain(Version.parse), J.maybe(J.field("minVersion", J.string))),
+      J.map1(chain(Version.parse), J.maybe(J.field("maxVersion", J.string))),
+    ),
+  ),
+)
