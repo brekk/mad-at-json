@@ -13,7 +13,7 @@ import { exec } from "Process"
 
 export alias Config = {
   exec :: String -> List String -> Wish CommandResult CommandResult,
-  execWithCmd :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult,
+  execWithConfig :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult,
   exists :: String -> Wish {} Boolean,
   getBytes :: String -> Wish (Error ByteArray) (Response ByteArray),
   readDir :: String -> Wish IO.Error (List String),
@@ -28,7 +28,7 @@ export defaultConfig = {
   writeFile: File.write,
   writeBytes: File.writeBytes,
   readDir: Directory.read,
-  execWithCmd: exec,
+  execWithConfig: exec,
   exec: exec($, $, Process.DEFAULT_COMMAND_OPTIONS),
   exists: File.exists,
   getBytes,

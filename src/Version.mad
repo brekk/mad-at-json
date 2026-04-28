@@ -5,7 +5,7 @@ import {} from "Integer"
 import {} from "List"
 import { Just, Nothing } from "Maybe"
 import {} from "Scan"
-import { split } from "String"
+import String from "String"
 
 
 
@@ -20,14 +20,29 @@ export type VersionRange
   | AnyVersion
 
 
-showVersion :: Version -> String
-export showVersion = (version) => {
-  major = show(getMajor(version))
-  minor = show(getMinor(version))
-  patch = show(getPatch(version))
-
-  return `${major}.${minor}.${patch}`
+major :: Version -> Integer
+major = where {
+  Version(x, _, _) =>
+    x
 }
+
+minor :: Version -> Integer
+minor = where {
+  Version(_, x, _) =>
+    x
+}
+
+patch :: Version -> Integer
+patch = where {
+  Version(_, _, x) =>
+    x
+}
+
+showVersion :: Version -> String
+export showVersion = (version) => pipe(
+  map(show),
+  String.join("."),
+)([major(version), minor(version), patch(version)])
 
 
 instance Scan Version {
@@ -46,37 +61,19 @@ export createRange = (maybeMin, maybeMax) => where(#[maybeMin, maybeMax]) {
   #[Nothing, Just(maxVersion)] =>
     UntilVersion(maxVersion)
 
-  #[Nothing, Nothing] =>
+  _ =>
     AnyVersion
 }
 
 
-getMajor :: Version -> Integer
-getMajor = where {
-  Version(major, _, _) =>
-    major
-}
-
-getMinor :: Version -> Integer
-getMinor = where {
-  Version(_, minor, _) =>
-    minor
-}
-
-getPatch :: Version -> Integer
-getPatch = where {
-  Version(_, _, patch) =>
-    patch
-}
-
 
 parse :: String -> Maybe Version
 export parse = pipe(
-  split("."),
+  String.split("."),
   map(scan),
   where {
-    [Just(major), Just(minor), Just(patch)] =>
-      Just(Version(major, minor, patch))
+    [Just(m), Just(n), Just(p)] =>
+      Just(Version(m, n, p))
 
     _ =>
       Nothing
@@ -99,12 +96,17 @@ export isInRange = (version, range) => where(range) {
     true
 }
 
+bounded :: (Version -> Version -> Boolean) -> Version -> Version -> Version
+bounded = (fn, v1, v2) => fn(v1, v2) ? v2 : v2
+
 
 max :: Version -> Version -> Version
-max = (v1, v2) => ge(v1, v2) ? v1 : v2
+export max = bounded(ge)
+// max = (v1, v2) => ge(v1, v2) ? v1 : v2
 
 min :: Version -> Version -> Version
-min = (v1, v2) => le(v1, v2) ? v1 : v2
+export min = bounded(le)
+// min = (v1, v2) => le(v1, v2) ? v1 : v2
 
 
 intersectRanges :: VersionRange -> VersionRange -> VersionRange

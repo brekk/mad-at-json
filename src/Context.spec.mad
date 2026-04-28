@@ -1,0 +1,52 @@
+import Dict from "Dictionary"
+import { Just, Nothing } from "Maybe"
+
+import Study from "Study"
+
+import Context from "@/Context"
+import { AnyVersion, FromVersion, UntilVersion, Version } from "@/Version"
+
+
+
+TEST_MODULE_BASE = Dict.fromList([
+  #["test-module", { version: Just(Version(0, 0, 1)), range: AnyVersion }],
+])
+
+testContextFind = Study.report(Context.findByName("test-module"))
+
+testContextFind(
+  "findByName - empty",
+  [
+    #[
+      // no nothing nada nein
+      Context.initialContext,
+      // nada nada yadda yadda
+      { version: Nothing, range: AnyVersion },
+    ],
+  ],
+)
+
+testContextFind(
+  "findByName - matched",
+  [
+    #[
+      { versions: TEST_MODULE_BASE, installedPackages: ["test-module"] },
+      { version: Just(Version(0, 0, 1)), range: AnyVersion },
+    ],
+  ],
+)
+
+Study.report(
+  Context.addInstalledPackage($, Context.initialContext),
+  "addInstalledPackage",
+  [#["zipzops", { versions: Dict.empty, installedPackages: ["zipzops"] }]],
+)
+
+Study.report(
+  Context.hasPackageBeenInstalled(
+    $,
+    Context.addInstalledPackage("test-module", Context.initialContext),
+  ),
+  "hasPackageBeenInstalled",
+  [#["test-module", true], #["no-zipzops", false]],
+)
