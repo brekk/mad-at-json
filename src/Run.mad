@@ -56,11 +56,7 @@ copyPackageToMadlibModules = (config, dependency) => pipe(
       source: `${Constants.TEMPORARY_MODULES_PATH}${d.sanitizedUrl}/`,
     }
   ),
-  (paths) => config.exec(
-    "cp",
-    ["-R", paths.source, paths.destination],
-    Process.DEFAULT_COMMAND_OPTIONS,
-  ),
+  (paths) => config.exec("cp", ["-R", paths.source, paths.destination]),
 )(dependency)
 
 
@@ -72,7 +68,7 @@ installNodeModules = (config, pkgName) => pipe(
   map((path) => ["install", path]),
   chain(
     pipe(
-      config.exec("npm", $, Process.DEFAULT_COMMAND_OPTIONS),
+      config.exec("npm", $),
       mapRej(.stderr),
     ),
   ),
@@ -84,7 +80,7 @@ installNodeModules = (config, pkgName) => pipe(
 
 initMadlibModulesFolder :: Config -> String -> a -> Wish String a
 initMadlibModulesFolder = (config, path, a) => pipe(
-  (p) => config.exec("mkdir", ["-p", p], Process.DEFAULT_COMMAND_OPTIONS),
+  (p) => config.exec("mkdir", ["-p", p]),
   mapRej(.stderr),
   andDo(of(a)),
 )(path)
@@ -122,11 +118,7 @@ readVersionDotLock = (config, dependency) => pipe(
 
 computeBuildHash :: Config -> Dependency -> Wish {} (Validate String)
 computeBuildHash = (config, dependency) => pipe(
-  (d) => config.exec(
-    "madlib",
-    ["package", "generate-hash", "-i", projectBaseUrl(d)],
-    Process.DEFAULT_COMMAND_OPTIONS,
-  ),
+  (d) => config.exec("madlib", ["package", "generate-hash", "-i", projectBaseUrl(d)]),
   map(.stdout),
   map(Valid),
   discardError(always(NotValid([BuildHashCouldNotBeGenerated], ""))),
@@ -365,7 +357,7 @@ processDependencies = (config, context, dependencies) => pipe(
       List.mapMaybe(
         where {
           DownloadError(err) =>
-            IO.putLineAndPass(Color.red(`${err}`), Nothing)
+            IO.putLineAndPass(Color.red(err), Nothing)
 
           Downloaded(a) =>
             Just(a)
@@ -438,9 +430,7 @@ installPackages = (config, context, madlibDotJsonPath) => pipe(
  */
 prepare :: Config -> String -> Wish String String
 prepare = (config, packageDotJsonPath) => pipe(
-  always(
-    config.exec("mkdir", ["-p", Constants.TEMPORARY_MODULES_PATH], Process.DEFAULT_COMMAND_OPTIONS),
-  ),
+  always(config.exec("mkdir", ["-p", Constants.TEMPORARY_MODULES_PATH])),
   andDo(of(packageDotJsonPath)),
   mapRej(.stderr),
   chain(
@@ -452,7 +442,7 @@ prepare = (config, packageDotJsonPath) => pipe(
   ),
   chain(
     (path) => pipe(
-      config.exec($, ["i"], Process.DEFAULT_COMMAND_OPTIONS),
+      config.exec($, ["i"]),
       mapRej(.stderr),
       andDo(of(path)),
     )("npm"),
