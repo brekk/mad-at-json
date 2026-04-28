@@ -1,0 +1,16 @@
+import IO from "IO"
+
+import Study from "Study"
+
+import { boundColor, green, red, safeColor, yellow } from "@/Color"
+
+
+
+exclaim = mappend($, "!")
+Study.report(boundColor(true, exclaim), "boundColor", [#["hey", "hey!"]])
+colorTest = (fn, fn2, c) => Study.report(boundColor(true, fn), c, [#["hey", fn2("hey")]])
+colorTest(red, IO.red, "red")
+colorTest(green, IO.green, "green")
+colorTest(yellow, IO.yellow, "yellow")
+Study.report(boundColor(false, exclaim), "boundColor - off", [#["hey", "hey"]])
+Study.report(safeColor(exclaim), "safeColor", [#["hey", "hey!"]])

@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "@j178/prek": "^0.3.11",
+    "prettier": "^3.8.3"
+  }
+}
