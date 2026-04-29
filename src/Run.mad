@@ -5,8 +5,8 @@ import type { Config } from "@/Config"
 import type { Context } from "@/Context"
 import type { Dependency } from "@/Parse/Dependency"
 import type { MadlibDotJson } from "@/Parse/MadlibJson"
+import type { VersionDotLock } from "@/Parse/VersionLock"
 import type { Validate, ValidationInput, ValidationOutput } from "@/Validate"
-import type { VersionDotLock } from "@/VersionDotLock"
 
 import { liftA3 } from "Applicative"
 import { gt } from "Compare"
@@ -25,24 +25,20 @@ import Color from "@/Color"
 import Constants from "@/Constants"
 import { addInstalledPackage, hasPackageBeenInstalled, initialContext } from "@/Context"
 import { DownloadError, Downloaded, downloadIfNotCached } from "@/Download"
+import { CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded, printError } from "@/Error"
 import { hashVersion } from "@/Hash"
 import MadlibDotJson from "@/MadlibDotJson"
 import {
-  BuildHashCouldNotBeGenerated,
-  CopyToMadlibModulesFailed,
-  MadlibDotJsonCouldNotBeLoaded,
   NotValid,
   Valid,
   ValidationError,
-  VersionDotLockMissing,
   failWithRecoverable,
-  printError,
-  printWarning,
   unsafeGetValidationValue,
   validate,
 } from "@/Validate"
 import { showVersion } from "@/Version"
 import VersionDotLock from "@/VersionDotLock"
+import { BuildHashCouldNotBeGenerated, VersionDotLockMissing, printWarning } from "@/Warning"
 
 
 
@@ -214,14 +210,14 @@ displayResult = (validation) => where(validation) {
   Valid(a) =>
     pipe(
       displayInstalling,
-      IO.putLineAndPass(`  - ${Color.green("installed!")}`),
+      Color.tabGreen("Installed!"),
     )(validation)
 
   NotValid(warnings, a) =>
     pipe(
       displayInstalling,
       List.reduce(printWarning, $, warnings),
-      IO.putLineAndPass(`  - ${Color.green("installed!")}`),
+      Color.tabYellow("Installed, with some issues"),
     )(validation)
 
   ValidationError(warnings, err, maybeA) =>

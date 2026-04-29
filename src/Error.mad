@@ -1,1 +1,14 @@
+import { tabRed } from "@/Color"
+
+
+
 export type Error = CopyToMadlibModulesFailed(String) | MadlibDotJsonCouldNotBeLoaded(String)
+
+printError :: a -> Error -> a
+export printError = (a, error) => where(error) {
+  CopyToMadlibModulesFailed(msg) =>
+    tabRed(msg, a)
+
+  MadlibDotJsonCouldNotBeLoaded(msg) =>
+    tabRed(msg, a)
+}

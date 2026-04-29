@@ -1,6 +1,29 @@
+import { tabYellow } from "@/Color"
+
+
+
 export type Warning
   = OutOfRangeVersion
   | InvalidVersionHash
   | InvalidBuildHash
   | VersionDotLockMissing
   | BuildHashCouldNotBeGenerated
+
+
+printWarning :: a -> Warning -> a
+export printWarning = (a, warning) => where(warning) {
+  OutOfRangeVersion =>
+    tabYellow("Package version does not match constraints", a)
+
+  InvalidVersionHash =>
+    tabYellow("Package version hash is corrupted", a)
+
+  InvalidBuildHash =>
+    tabYellow("Build hash is corrupted", a)
+
+  VersionDotLockMissing =>
+    tabYellow("version.lock file missing", a)
+
+  _ =>
+    a
+}
