@@ -1,0 +1,208 @@
+{
+  "buildHash": "911f0b1a744a15203bf2344676dde200",
+  "jsApi": {
+    "apiInstances": [
+      "Scan Version",
+      "Comparable Version",
+      "Monad Validate",
+      "Applicative Validate",
+      "Functor Validate"
+    ],
+    "apiAliases": {
+      "src/Parse/MadlibJson.mad#MadlibDotJson": "{ bin :: Maybe String, dependencies :: Maybe (List Dependency), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "src/Config.mad#Config": "{ exec :: String -> List String -> Wish CommandResult CommandResult, execWithConfig :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) (Response ByteArray), readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
+      "src/Context.mad#Context": "{ installedPackages :: List String, versions :: Dictionary String VersionInfo }",
+      "src/Validate.mad#ValidationOutput": "{ context :: Context, dependency :: Dependency, madlibDotJson :: MadlibDotJson, shouldCopy :: Boolean }",
+      "src/Parse/VersionLock.mad#PublicAPI": "{ apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }",
+      "src/Validate.mad#ValidationInput": "{ computedBuildHash :: String, computedVersionHash :: String, madlibDotJson :: MadlibDotJson, versionDotLock :: Maybe VersionDotLock }",
+      "src/Parse/VersionLock.mad#VersionDotLock": "{ buildHash :: String, jsApi :: PublicAPI, llvmApi :: PublicAPI, versionHash :: String }",
+      "src/Parse/Dependency.mad#Dependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "src/Context.mad#VersionInfo": "{ range :: VersionRange, version :: Maybe Version }"
+    },
+    "apiInterfaces": {},
+    "apiNames": {
+      "src/Run.mad#run": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> Wish {} {}",
+      "src/Color.mad#tabRed": "String -> a -> a",
+      "src/Color.mad#red": "String -> String",
+      "src/Color.mad#IS_COLOR_ENABLED": "Boolean",
+      "src/Config.mad#defaultConfig": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
+      "src/Validate.mad#hasFailed": "Validate a -> Boolean",
+      "src/Validate.mad#unsafeGetValidationValue": "Validate a -> a",
+      "src/Validate.mad#mapError": "(Error -> Error) -> Validate a -> Validate a",
+      "src/Color.mad#tabYellow": "String -> a -> a",
+      "src/Constants.mad#MADLIB_NOT_FOUND": "String",
+      "src/Parse/VersionLock.mad#load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { buildHash :: String, jsApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, llvmApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, versionHash :: String }",
+      "src/Validate.mad#addWarning": "Warning -> Validate a -> Validate a",
+      "src/Version.mad#min": "Version -> Version -> Version",
+      "src/Color.mad#boundColor": "Boolean -> (a -> a) -> a -> a",
+      "src/URL.mad#sanitizeUrl": "String -> String",
+      "src/Parse/Dependency.mad#dependencyParser": "Parser (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange })",
+      "src/Constants.mad#TEMPORARY_MODULES_PATH": "String",
+      "src/Validate.mad#combine": "Validate a -> Validate b -> Validate b",
+      "src/Color.mad#green": "String -> String",
+      "src/Validate.mad#validate": "{ installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> { computedBuildHash :: String, computedVersionHash :: String, madlibDotJson :: { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }, versionDotLock :: Maybe { buildHash :: String, jsApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, llvmApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, versionHash :: String } } -> Validate { context :: { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }, dependency :: { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }, madlibDotJson :: { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }, shouldCopy :: Boolean }",
+      "src/Version.mad#max": "Version -> Version -> Version",
+      "src/Context.mad#initialContext": "{ installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }",
+      "src/Validate.mad#getWarnings": "Validate a -> List Warning",
+      "src/Version.mad#intersectRanges": "VersionRange -> VersionRange -> VersionRange",
+      "src/Parse/MadlibJson.mad#parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "src/Parse/VersionLock.mad#parse": "String -> Wish String { buildHash :: String, jsApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, llvmApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, versionHash :: String }",
+      "src/Hash.mad#hashVersion": "Version -> String",
+      "src/Version.mad#showVersion": "Version -> String",
+      "src/Validate.mad#failWithRecoverable": "Error -> Validate a -> Validate a",
+      "src/Color.mad#tabGreen": "String -> a -> a",
+      "src/Context.mad#addInstalledPackage": "String -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }",
+      "src/Constants.mad#MADLIB_MODULES_PATH": "String",
+      "src/Warning.mad#printWarning": "a -> Warning -> a",
+      "src/Color.mad#yellow": "String -> String",
+      "src/Context.mad#hasPackageBeenInstalled": "String -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> Boolean",
+      "src/Download.mad#downloadIfNotCached": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> Wish {} DownloadResult",
+      "src/Context.mad#updateEntry": "String -> { range :: VersionRange, version :: Maybe Version } -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }",
+      "src/Context.mad#findByName": "String -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { range :: VersionRange, version :: Maybe Version }",
+      "src/Color.mad#safeColor": "(a -> a) -> a -> a",
+      "src/Version.mad#parse": "String -> Maybe Version",
+      "src/Error.mad#printError": "a -> Error -> a",
+      "src/Version.mad#isInRange": "Version -> VersionRange -> Boolean",
+      "src/Validate.mad#fail": "Error -> Validate a -> Validate a",
+      "src/Parse/MadlibJson.mad#load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "src/Version.mad#createRange": "Maybe Version -> Maybe Version -> VersionRange"
+    },
+    "apiTypes": {
+      "src/Warning.mad#Warning": [
+        "OutOfRangeVersion",
+        "InvalidVersionHash",
+        "InvalidBuildHash",
+        "VersionDotLockMissing",
+        "BuildHashCouldNotBeGenerated"
+      ],
+      "src/Download.mad#DownloadResult": [
+        "Downloaded Dependency",
+        "DownloadError String"
+      ],
+      "src/Download.mad#DownloadFailure": [
+        "DownloadFailure"
+      ],
+      "src/Version.mad#Version": [
+        "Version Integer Integer Integer"
+      ],
+      "src/Version.mad#VersionRange": [
+        "VersionRange Version Version",
+        "FromVersion Version",
+        "UntilVersion Version",
+        "AnyVersion"
+      ],
+      "src/Error.mad#Error": [
+        "CopyToMadlibModulesFailed String",
+        "MadlibDotJsonCouldNotBeLoaded String"
+      ],
+      "src/Validate.mad#Validate a": [
+        "Valid a",
+        "NotValid (List Warning) a",
+        "ValidationError (List Warning) Error (Maybe a)"
+      ]
+    }
+  },
+  "llvmApi": {
+    "apiInstances": [
+      "Scan Version",
+      "Comparable Version",
+      "Monad Validate",
+      "Applicative Validate",
+      "Functor Validate"
+    ],
+    "apiAliases": {
+      "src/Parse/MadlibJson.mad#MadlibDotJson": "{ bin :: Maybe String, dependencies :: Maybe (List Dependency), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "src/Config.mad#Config": "{ exec :: String -> List String -> Wish CommandResult CommandResult, execWithConfig :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) (Response ByteArray), readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
+      "src/Context.mad#Context": "{ installedPackages :: List String, versions :: Dictionary String VersionInfo }",
+      "src/Validate.mad#ValidationOutput": "{ context :: Context, dependency :: Dependency, madlibDotJson :: MadlibDotJson, shouldCopy :: Boolean }",
+      "src/Parse/VersionLock.mad#PublicAPI": "{ apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }",
+      "src/Validate.mad#ValidationInput": "{ computedBuildHash :: String, computedVersionHash :: String, madlibDotJson :: MadlibDotJson, versionDotLock :: Maybe VersionDotLock }",
+      "src/Parse/VersionLock.mad#VersionDotLock": "{ buildHash :: String, jsApi :: PublicAPI, llvmApi :: PublicAPI, versionHash :: String }",
+      "src/Parse/Dependency.mad#Dependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "src/Context.mad#VersionInfo": "{ range :: VersionRange, version :: Maybe Version }"
+    },
+    "apiInterfaces": {},
+    "apiNames": {
+      "src/Run.mad#run": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> Wish {} {}",
+      "src/Color.mad#tabRed": "String -> a -> a",
+      "src/Color.mad#red": "String -> String",
+      "src/Color.mad#IS_COLOR_ENABLED": "Boolean",
+      "src/Config.mad#defaultConfig": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
+      "src/Validate.mad#hasFailed": "Validate a -> Boolean",
+      "src/Validate.mad#unsafeGetValidationValue": "Validate a -> a",
+      "src/Validate.mad#mapError": "(Error -> Error) -> Validate a -> Validate a",
+      "src/Color.mad#tabYellow": "String -> a -> a",
+      "src/Constants.mad#MADLIB_NOT_FOUND": "String",
+      "src/Parse/VersionLock.mad#load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { buildHash :: String, jsApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, llvmApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, versionHash :: String }",
+      "src/Validate.mad#addWarning": "Warning -> Validate a -> Validate a",
+      "src/Version.mad#min": "Version -> Version -> Version",
+      "src/Color.mad#boundColor": "Boolean -> (a -> a) -> a -> a",
+      "src/URL.mad#sanitizeUrl": "String -> String",
+      "src/Parse/Dependency.mad#dependencyParser": "Parser (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange })",
+      "src/Constants.mad#TEMPORARY_MODULES_PATH": "String",
+      "src/Validate.mad#combine": "Validate a -> Validate b -> Validate b",
+      "src/Color.mad#green": "String -> String",
+      "src/Validate.mad#validate": "{ installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> { computedBuildHash :: String, computedVersionHash :: String, madlibDotJson :: { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }, versionDotLock :: Maybe { buildHash :: String, jsApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, llvmApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, versionHash :: String } } -> Validate { context :: { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }, dependency :: { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }, madlibDotJson :: { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }, shouldCopy :: Boolean }",
+      "src/Version.mad#max": "Version -> Version -> Version",
+      "src/Context.mad#initialContext": "{ installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }",
+      "src/Validate.mad#getWarnings": "Validate a -> List Warning",
+      "src/Version.mad#intersectRanges": "VersionRange -> VersionRange -> VersionRange",
+      "src/Parse/MadlibJson.mad#parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "src/Parse/VersionLock.mad#parse": "String -> Wish String { buildHash :: String, jsApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, llvmApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, versionHash :: String }",
+      "src/Hash.mad#hashVersion": "Version -> String",
+      "src/Version.mad#showVersion": "Version -> String",
+      "src/Validate.mad#failWithRecoverable": "Error -> Validate a -> Validate a",
+      "src/Color.mad#tabGreen": "String -> a -> a",
+      "src/Context.mad#addInstalledPackage": "String -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }",
+      "src/Constants.mad#MADLIB_MODULES_PATH": "String",
+      "src/Warning.mad#printWarning": "a -> Warning -> a",
+      "src/Color.mad#yellow": "String -> String",
+      "src/Context.mad#hasPackageBeenInstalled": "String -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> Boolean",
+      "src/Download.mad#downloadIfNotCached": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> Wish {} DownloadResult",
+      "src/Context.mad#updateEntry": "String -> { range :: VersionRange, version :: Maybe Version } -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }",
+      "src/Context.mad#findByName": "String -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { range :: VersionRange, version :: Maybe Version }",
+      "src/Color.mad#safeColor": "(a -> a) -> a -> a",
+      "src/Version.mad#parse": "String -> Maybe Version",
+      "src/Error.mad#printError": "a -> Error -> a",
+      "src/Version.mad#isInRange": "Version -> VersionRange -> Boolean",
+      "src/Validate.mad#fail": "Error -> Validate a -> Validate a",
+      "src/Parse/MadlibJson.mad#load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "src/Version.mad#createRange": "Maybe Version -> Maybe Version -> VersionRange"
+    },
+    "apiTypes": {
+      "src/Warning.mad#Warning": [
+        "OutOfRangeVersion",
+        "InvalidVersionHash",
+        "InvalidBuildHash",
+        "VersionDotLockMissing",
+        "BuildHashCouldNotBeGenerated"
+      ],
+      "src/Download.mad#DownloadResult": [
+        "Downloaded Dependency",
+        "DownloadError String"
+      ],
+      "src/Download.mad#DownloadFailure": [
+        "DownloadFailure"
+      ],
+      "src/Version.mad#Version": [
+        "Version Integer Integer Integer"
+      ],
+      "src/Version.mad#VersionRange": [
+        "VersionRange Version Version",
+        "FromVersion Version",
+        "UntilVersion Version",
+        "AnyVersion"
+      ],
+      "src/Error.mad#Error": [
+        "CopyToMadlibModulesFailed String",
+        "MadlibDotJsonCouldNotBeLoaded String"
+      ],
+      "src/Validate.mad#Validate a": [
+        "Valid a",
+        "NotValid (List Warning) a",
+        "ValidationError (List Warning) Error (Maybe a)"
+      ]
+    }
+  },
+  "versionHash": "25e64aa754c310d45c1e084d574c1bb0"
+}

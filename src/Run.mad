@@ -27,7 +27,8 @@ import { addInstalledPackage, hasPackageBeenInstalled, initialContext } from "@/
 import { DownloadError, Downloaded, downloadIfNotCached } from "@/Download"
 import { CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded, printError } from "@/Error"
 import { hashVersion } from "@/Hash"
-import MadlibDotJson from "@/MadlibDotJson"
+import MadlibDotJson from "@/Parse/MadlibJson"
+import VersionDotLock from "@/Parse/VersionLock"
 import {
   NotValid,
   Valid,
@@ -37,7 +38,6 @@ import {
   validate,
 } from "@/Validate"
 import { showVersion } from "@/Version"
-import VersionDotLock from "@/VersionDotLock"
 import { BuildHashCouldNotBeGenerated, VersionDotLockMissing, printWarning } from "@/Warning"
 
 
