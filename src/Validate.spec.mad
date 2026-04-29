@@ -4,18 +4,10 @@ import { Just, Nothing } from "Maybe"
 import { assertEquals, test } from "Test"
 
 import { initialContext, updateEntry } from "@/Context"
-import {
-  InvalidBuildHash,
-  InvalidVersionHash,
-  MadlibDotJsonCouldNotBeLoaded,
-  NotValid,
-  OutOfRangeVersion,
-  Valid,
-  ValidationError,
-  combine,
-  validate,
-} from "@/Validate"
+import { MadlibDotJsonCouldNotBeLoaded } from "@/Error"
+import { NotValid, Valid, ValidationError, combine, validate } from "@/Validate"
 import { AnyVersion, FromVersion, Version } from "@/Version"
+import { InvalidBuildHash, InvalidVersionHash, OutOfRangeVersion } from "@/Warning"
 
 
 

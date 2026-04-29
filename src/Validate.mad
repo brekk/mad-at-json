@@ -1,10 +1,12 @@
 import type { Maybe } from "Maybe"
 
 import type { Context, VersionInfo } from "@/Context"
+import type { Error } from "@/Error"
 import type { Dependency } from "@/Parse/Dependency"
 import type { MadlibDotJson } from "@/Parse/MadlibJson"
 import type { VersionRange } from "@/Version"
 import type { VersionDotLock } from "@/VersionDotLock"
+import type { Warning } from "@/Warning"
 
 import { always, equals, ifElse } from "Function"
 import IO from "IO"
@@ -13,7 +15,9 @@ import { andDo } from "Monad"
 
 import Color from "@/Color"
 import { findByName, updateEntry } from "@/Context"
+import Error from "@/Error"
 import { intersectRanges, isInRange } from "@/Version"
+import Warning from "@/Warning"
 
 
 
@@ -31,17 +35,6 @@ export alias ValidationOutput = {
   madlibDotJson :: MadlibDotJson,
   shouldCopy :: Boolean,
 }
-
-
-export type Warning
-  = OutOfRangeVersion
-  | InvalidVersionHash
-  | InvalidBuildHash
-  | VersionDotLockMissing
-  | BuildHashCouldNotBeGenerated
-
-
-export type Error = CopyToMadlibModulesFailed(String) | MadlibDotJsonCouldNotBeLoaded(String)
 
 
 export type Validate a
@@ -129,38 +122,10 @@ instance Monad Validate {
   of = pure
 }
 
-tabbedColorPrint = (fn, msg) => "  - " ++ fn(msg)
-cprint = (fn, msg, a) => IO.putLineAndPass(tabbedColorPrint(fn, msg), a)
-yellow = cprint(Color.yellow)
-red = cprint(Color.red)
-green = cprint(Color.green)
 
-printError :: a -> Error -> a
-export printError = (a, error) => where(IO.trace("err", error)) {
-  CopyToMadlibModulesFailed(msg) =>
-    red(msg, a)
 
-  MadlibDotJsonCouldNotBeLoaded(msg) =>
-    red(msg, a)
-}
 
-printWarning :: a -> Warning -> a
-export printWarning = (a, warning) => where(warning) {
-  OutOfRangeVersion =>
-    yellow("Package version does not match constraints", a)
 
-  InvalidVersionHash =>
-    yellow("Package version hash is corrupted", a)
-
-  InvalidBuildHash =>
-    yellow("Build hash is corrupted", a)
-
-  VersionDotLockMissing =>
-    yellow("version.lock file missing", a)
-
-  _ =>
-    a
-}
 
 
 mapError :: (Error -> Error) -> Validate a -> Validate a
@@ -212,7 +177,7 @@ export addWarning = (warning, x) => where(x) {
 
 
 getWarnings :: Validate a -> List Warning
-export getWarnings = (validation) => where(validation) {
+export getWarnings = where {
   NotValid(ws, _) =>
     ws
 
@@ -302,11 +267,11 @@ buildGoodRangeResult = ({ version }, versionInfo, versionRange) => Valid({
 
 
 buildBadRangeResult :: MadlibDotJson -> VersionInfo -> VersionRange -> Validate RangeOutput
-buildBadRangeResult = ({ version }, { version: v2 }, versionRange) => {
+buildBadRangeResult = ({ version: v1 }, { version: v2 }, versionRange) => {
   shouldCopy = v2 == Nothing
   return NotValid(
-    [OutOfRangeVersion],
-    { versionInfo: { version: shouldCopy ? Just(version) : v2, range: versionRange }, shouldCopy },
+    [Warning.OutOfRangeVersion],
+    { versionInfo: { version: shouldCopy ? Just(v1) : v2, range: versionRange }, shouldCopy },
   )
 }
 
@@ -332,8 +297,7 @@ buildValidationOutput = (context, madlibDotJson, dependency, rangeResult) => {
 
 
 validateVersion :: Context -> Dependency -> ValidationInput -> Validate ValidationOutput
-validateVersion = (context, dependency, validationInput) => {
-  madlibDotJson = validationInput.madlibDotJson
+validateVersion = (context, dependency, { madlibDotJson }) => {
   versionInfo = findByName(madlibDotJson.name, context)
 
   return pipe(
@@ -356,7 +320,7 @@ validateHashes = (vInput) => {
       ifElse(
         equals(computedBuildHash),
         always(Valid({})),
-        always(NotValid([InvalidBuildHash], {})),
+        always(NotValid([Warning.InvalidBuildHash], {})),
         buildHash,
       )
 
@@ -369,7 +333,7 @@ validateHashes = (vInput) => {
       ifElse(
         equals(computedVersionHash),
         always(Valid({})),
-        always(NotValid([InvalidVersionHash], {})),
+        always(NotValid([Warning.InvalidVersionHash], {})),
         versionHash,
       )
 

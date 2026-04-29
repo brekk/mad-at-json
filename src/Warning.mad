@@ -1,0 +1,6 @@
+export type Warning
+  = OutOfRangeVersion
+  | InvalidVersionHash
+  | InvalidBuildHash
+  | VersionDotLockMissing
+  | BuildHashCouldNotBeGenerated

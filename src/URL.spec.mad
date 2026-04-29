@@ -1,0 +1,17 @@
+import Study from "Study"
+
+import Url from "@/URL"
+
+
+
+Study.report(
+  Url.sanitizeUrl,
+  "sanitizeUrl",
+  [
+    #[
+      "https://whatever.biz#heyheyhey?science=cool&bizness=really-cool",
+      "https___whatever_biz_heyheyhey_science_cool_bizness_really_cool",
+    ],
+    #["", ""],
+  ],
+)
