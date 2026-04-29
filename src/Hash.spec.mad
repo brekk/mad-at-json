@@ -1,0 +1,15 @@
+import Study from "Study"
+
+import Hash from "@/Hash"
+import { Version } from "@/Version"
+
+
+
+Study.report(
+  Hash.hashVersion,
+  "hashVersion",
+  [
+    #[Version(0, 0, 1), "ee5597d6e8f925bb2a434f7e19ff8ca6"],
+    #[Version(0, 1, 0), "e399d087e65d1078687b468694325046"],
+  ],
+)

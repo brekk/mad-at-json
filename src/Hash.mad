@@ -2,8 +2,6 @@ import type { Version } from "@/Version"
 
 import Crypto from "Crypto"
 
-import {} from "@/Version"
-
 
 
 hashVersion :: Version -> String

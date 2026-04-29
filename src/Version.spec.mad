@@ -4,7 +4,6 @@ import type { Version } from "./Version"
 
 import { EQ, GT, LT } from "Compare"
 import { Just, Nothing } from "Maybe"
-import { assertEquals, test } from "Test"
 
 import Study from "Study"
 

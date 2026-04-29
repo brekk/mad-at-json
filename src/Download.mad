@@ -115,7 +115,9 @@ downloadPackageWithHttp = (config, dependency, url) => pipe(
 
 copyLocalPackage :: Config -> Dependency -> String -> Wish {} DownloadResult
 copyLocalPackage = (config, dependency, uri) => {
-  local = mappend(tempPath(dependency.sanitizedUrl))
+  goodUrl = tempPath(dependency.sanitizedUrl)
+  local = mappend(goodUrl)
+  remove = (x) => config.exec("sh", ["-c", "rm -r " ++ local(x)])
   return pipe(
     String.drop(7),
     (path) => pipe(
@@ -125,12 +127,12 @@ copyLocalPackage = (config, dependency, uri) => {
     )(path),
     chain(
       (path) => pipe(
-        (p) => ["-c", `cp -R ${p} ${tempPath(dependency.sanitizedUrl)}`],
+        (p) => ["-c", `cp -R ${p} ${goodUrl}`],
         config.exec("sh", $),
-        andDo(config.exec("sh", ["-c", "rm -r " ++ local("/.git")])),
-        andDo(config.exec("sh", ["-c", "rm -r " ++ local("/madlib_modules")])),
-        andDo(config.exec("sh", ["-c", "rm -r " ++ local("/.module_cache")])),
-        andDo(config.exec("sh", ["-c", "rm -r " ++ local("/node_modules")])),
+        andDo(remove("/.git")),
+        andDo(remove("/madlib_modules")),
+        andDo(remove("/.module_cache")),
+        andDo(remove("/node_modules")),
         mapRej(always({})),
       )(path),
     ),
