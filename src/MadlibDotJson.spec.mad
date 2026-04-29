@@ -5,8 +5,8 @@ import { Nothing } from "Maybe"
 import { ErrorWithMessage, assertEquals, test } from "Test"
 import { bad, bichain, good } from "Wish"
 
-import { load, parse } from "./MadlibDotJson"
-import { Version } from "./Version"
+import { load, parse } from "@/Parse/MadlibJson"
+import { Version } from "@/Version"
 
 
 

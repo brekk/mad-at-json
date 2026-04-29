@@ -3,8 +3,8 @@ import type { Wish } from "Wish"
 
 import type { Config } from "@/Config"
 import type { Context } from "@/Context"
-import type { Dependency } from "@/Dependency"
-import type { MadlibDotJson } from "@/MadlibDotJson"
+import type { Dependency } from "@/Parse/Dependency"
+import type { MadlibDotJson } from "@/Parse/MadlibJson"
 import type { Validate, ValidationInput, ValidationOutput } from "@/Validate"
 import type { VersionDotLock } from "@/VersionDotLock"
 

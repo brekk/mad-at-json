@@ -1,19 +1,19 @@
 import type { Maybe } from "Maybe"
 
-import type { Context, VersionInfo } from "./Context"
-import type { Dependency } from "./Dependency"
-import type { MadlibDotJson } from "./MadlibDotJson"
-import type { VersionRange } from "./Version"
-import type { VersionDotLock } from "./VersionDotLock"
+import type { Context, VersionInfo } from "@/Context"
+import type { Dependency } from "@/Parse/Dependency"
+import type { MadlibDotJson } from "@/Parse/MadlibJson"
+import type { VersionRange } from "@/Version"
+import type { VersionDotLock } from "@/VersionDotLock"
 
-import { always, equals, ifElse, not } from "Function"
+import { always, equals, ifElse } from "Function"
 import IO from "IO"
 import { Just, Nothing } from "Maybe"
 import { andDo } from "Monad"
 
-import { findByName, updateEntry } from "./Context"
-import { intersectRanges, isInRange } from "./Version"
 import Color from "@/Color"
+import { findByName, updateEntry } from "@/Context"
+import { intersectRanges, isInRange } from "@/Version"
 
 
 
@@ -129,30 +129,34 @@ instance Monad Validate {
   of = pure
 }
 
-
+tabbedColorPrint = (fn, msg) => "  - " ++ fn(msg)
+cprint = (fn, msg, a) => IO.putLineAndPass(tabbedColorPrint(fn, msg), a)
+yellow = cprint(Color.yellow)
+red = cprint(Color.red)
+green = cprint(Color.green)
 
 printError :: a -> Error -> a
 export printError = (a, error) => where(IO.trace("err", error)) {
   CopyToMadlibModulesFailed(msg) =>
-    IO.putLineAndPass(`  - ${Color.red(msg)}`, a)
+    red(msg, a)
 
   MadlibDotJsonCouldNotBeLoaded(msg) =>
-    IO.putLineAndPass(`  - ${Color.red(msg)}`, a)
+    red(msg, a)
 }
 
 printWarning :: a -> Warning -> a
 export printWarning = (a, warning) => where(warning) {
   OutOfRangeVersion =>
-    IO.putLineAndPass(`  - ${Color.yellow("Package version does not match constraints")}`, a)
+    yellow("Package version does not match constraints", a)
 
   InvalidVersionHash =>
-    IO.putLineAndPass(`  - ${Color.yellow("Package version hash is corrupted")}`, a)
+    yellow("Package version hash is corrupted", a)
 
   InvalidBuildHash =>
-    IO.putLineAndPass(`  - ${Color.yellow("Build hash is corrupted")}`, a)
+    yellow("Build hash is corrupted", a)
 
   VersionDotLockMissing =>
-    IO.putLineAndPass(`  - ${Color.yellow("version.lock file missing")}`, a)
+    yellow("version.lock file missing", a)
 
   _ =>
     a
@@ -174,36 +178,36 @@ export combine = (a, b) => where(#[a, b]) {
   #[Valid(_), _] =>
     b
 
-  #[NotValid(warnings, _), Valid(x)] =>
-    NotValid(warnings, x)
+  #[NotValid(w, _), Valid(x)] =>
+    NotValid(w, x)
 
-  #[NotValid(warningsA, _), NotValid(warningsB, x)] =>
-    NotValid(warningsA ++ warningsB, x)
+  #[NotValid(wA, _), NotValid(wB, x)] =>
+    NotValid(wA ++ wB, x)
 
-  #[NotValid(warningsA, _), ValidationError(warningsB, error, x)] =>
-    ValidationError(warningsA ++ warningsB, error, x)
+  #[NotValid(wA, _), ValidationError(wB, error, x)] =>
+    ValidationError(wA ++ wB, error, x)
 
-  #[ValidationError(warnings, error, maybeA), Valid(v)] =>
-    ValidationError(warnings, error, map(always(v), maybeA))
+  #[ValidationError(w, error, maybeA), Valid(v)] =>
+    ValidationError(w, error, map(always(v), maybeA))
 
-  #[ValidationError(warningsA, error, maybeA), NotValid(warningsB, v)] =>
-    ValidationError(warningsA ++ warningsB, error, map(always(v), maybeA))
+  #[ValidationError(wA, error, maybeA), NotValid(wB, v)] =>
+    ValidationError(wA ++ wB, error, map(always(v), maybeA))
 
-  #[ValidationError(warningsA, _, _), ValidationError(warningsB, error, m)] =>
-    ValidationError(warningsA ++ warningsB, error, m)
+  #[ValidationError(wA, _, _), ValidationError(wB, error, m)] =>
+    ValidationError(wA ++ wB, error, m)
 }
 
 
 addWarning :: Warning -> Validate a -> Validate a
-export addWarning = (warning, validationResult) => where(validationResult) {
+export addWarning = (warning, x) => where(x) {
   Valid(a) =>
     NotValid([warning], a)
 
-  NotValid(warnings, a) =>
-    NotValid([warning, ...warnings], a)
+  NotValid(wx, a) =>
+    NotValid([warning, ...wx], a)
 
-  ValidationError(warnings, error, a) =>
-    ValidationError([warning, ...warnings], error, a)
+  ValidationError(wx, error, a) =>
+    ValidationError([warning, ...wx], error, a)
 }
 
 

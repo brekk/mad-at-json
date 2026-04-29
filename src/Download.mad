@@ -1,7 +1,7 @@
 import type { Wish } from "Wish"
 
 import type { Config } from "@/Config"
-import type { Dependency } from "@/Dependency"
+import type { Dependency } from "@/Parse/Dependency"
 
 import FilePath from "FilePath"
 import { always, ifElse } from "Function"

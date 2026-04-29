@@ -1,9 +1,9 @@
-import type { Validate } from "./Validate"
+import type { Validate } from "@/Validate"
 
 import { Just, Nothing } from "Maybe"
 import { assertEquals, test } from "Test"
 
-import { initialContext, updateEntry } from "./Context"
+import { initialContext, updateEntry } from "@/Context"
 import {
   InvalidBuildHash,
   InvalidVersionHash,
@@ -14,8 +14,8 @@ import {
   ValidationError,
   combine,
   validate,
-} from "./Validate"
-import { AnyVersion, FromVersion, Version } from "./Version"
+} from "@/Validate"
+import { AnyVersion, FromVersion, Version } from "@/Version"
 
 
 

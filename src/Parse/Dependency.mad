@@ -6,7 +6,7 @@ import J from "Json/Parse"
 import { Nothing } from "Maybe"
 import {} from "Wish"
 
-import { sanitizeUrl } from "./URL"
+import { sanitizeUrl } from "@/URL"
 import Version from "@/Version"
 
 
