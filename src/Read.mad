@@ -1,0 +1,15 @@
+import File from "File"
+
+import { parse } from "@/Parse/MadlibJson"
+
+
+
+export readWithRej = (parseFail, x) => pipe(
+  File.read,
+  chain(
+    pipe(
+      parse,
+      parseFail,
+    ),
+  ),
+)(x)

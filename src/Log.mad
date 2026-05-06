@@ -1,0 +1,53 @@
+/* ★★★ mad-at-json@0.0.1 ★★★
+ * THIS FILE AUTOMATICALLY GENERATED FROM SOURCE: mad-at-json.clowncar
+ */
+
+import Party from "PartyBus"
+
+
+
+export tags = {
+  madAtJson: Party.tag("madAtJson"),
+  config: Party.tagWithScope("madAtJson", ["config"]),
+  download: Party.tagWithScope("madAtJson", ["download"]),
+  context: Party.tagWithScope("madAtJson", ["context"]),
+  hash: Party.tagWithScope("madAtJson", ["hash"]),
+  run: Party.tagWithScope("madAtJson", ["run"]),
+  parse: Party.tagWithScope("madAtJson", ["parse"]),
+  parseJson: Party.tagWithScope("madAtJson", ["parse", "json"]),
+  parseDependency: Party.tagWithScope("madAtJson", ["parse", "dependency"]),
+  parseVersion: Party.tagWithScope("madAtJson", ["parse", "version"]),
+  error: Party.tagWithScope("madAtJson", ["error"]),
+  version: Party.tagWithScope("madAtJson", ["version"]),
+  validate: Party.tagWithScope("madAtJson", ["validate"]),
+}
+export env = {
+  madAtJson: Party.env(tags.madAtJson),
+  config: Party.env(tags.config),
+  download: Party.env(tags.download),
+  context: Party.env(tags.context),
+  hash: Party.env(tags.hash),
+  run: Party.env(tags.run),
+  parse: Party.env(tags.parse),
+  parseJson: Party.env(tags.parseJson),
+  parseDependency: Party.env(tags.parseDependency),
+  parseVersion: Party.env(tags.parseVersion),
+  error: Party.env(tags.error),
+  version: Party.env(tags.version),
+  validate: Party.env(tags.validate),
+}
+export tapped = {
+  madAtJson: Party.tap(env.madAtJson),
+  config: Party.tap(env.config),
+  download: Party.tap(env.download),
+  context: Party.tap(env.context),
+  hash: Party.tap(env.hash),
+  run: Party.tap(env.run),
+  parse: Party.tap(env.parse),
+  parseJson: Party.tap(env.parseJson),
+  parseDependency: Party.tap(env.parseDependency),
+  parseVersion: Party.tap(env.parseVersion),
+  error: Party.tap(env.error),
+  version: Party.tap(env.version),
+  validate: Party.tap(env.validate),
+}
