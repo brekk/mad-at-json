@@ -1,13 +1,18 @@
 import type { Dependency } from "@/Parse/Dependency"
 import type { MadlibDotJson } from "@/Parse/MadlibJson"
 
+import { create, createWithImplicitRange, createWithRange, printDependency } from "@/Dependency"
 import { dependencyParser } from "@/Parse/Dependency"
 import { load, parse } from "@/Parse/MadlibJson"
 
 
 
-export dependencyParser
+export parseDependency = dependencyParser
 export parse
 export load
 export type Dependency
 export type MadlibDotJson
+export create
+export createWithRange
+export createWithImplicitRange
+export printDependency

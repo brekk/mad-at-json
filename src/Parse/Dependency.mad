@@ -3,6 +3,7 @@ import type { Maybe } from "Maybe"
 import type { VersionRange } from "@/Version"
 
 import J from "Json/Parse"
+import { Just } from "Maybe"
 import { Nothing } from "Maybe"
 import {} from "Wish"
 
@@ -18,20 +19,22 @@ export alias Dependency = {
   url :: String,
   versionRange :: VersionRange,
 }
+// dap up your deps
+export construct = (url, description, maybeMinVersion, maybeMaxVersion, name) => (
+  {
+    url,
+    description,
+    versionRange: Version.createRange(maybeMinVersion, maybeMaxVersion),
+    name,
+    sanitizedUrl: sanitizeUrl(url),
+  }
+)
 dependencyParser :: J.Parser (List Dependency)
 export dependencyParser = J.field(
   "dependencies",
   J.list(
     J.map5(
-      (url, description, maybeMinVersion, maybeMaxVersion, name) => (
-        {
-          url,
-          description,
-          versionRange: Version.createRange(maybeMinVersion, maybeMaxVersion),
-          name,
-          sanitizedUrl: sanitizeUrl(url),
-        }
-      ),
+      construct,
       J.field("url", J.string),
       J.field("description", J.maybe(J.string)),
       J.map1(chain(Version.parse), J.maybe(J.field("minVersion", J.string))),

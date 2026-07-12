@@ -139,3 +139,27 @@ export intersection = (range1, range2) => where(#[range1, range2]) {
   #[range, AnyVersion] =>
     range
 }
+MIN_VERSION = `"minVersion": `
+_minV = pipe(
+  showVersion,
+  mappend(MIN_VERSION),
+)
+_maxV = pipe(
+  showVersion,
+  mappend(`"maxVersion": `),
+)
+printRange :: VersionRange -> String
+export printRange = where {
+  VersionRange(minV, maxV) =>
+    `${_minV(minV)},
+  ${_maxV(maxV)}`
+
+  FromVersion(minV) =>
+    _minV(minV)
+
+  UntilVersion(maxV) =>
+    _maxV(maxV)
+
+  _ =>
+    MIN_VERSION ++ "*"
+}
