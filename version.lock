@@ -1,5 +1,5 @@
 {
-  "buildHash": "767300319b5c0acb815aa45964e2ab88",
+  "buildHash": "6d66564f546b15b9e35b82db9b1de859",
   "jsApi": {
     "apiInstances": [
       "Scan Version",
@@ -23,8 +23,11 @@
     "apiNames": {
       "src/Run.mad#run": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> Wish {} {}",
       "src/Color.mad#tabRed": "String -> a -> a",
+      "src/Version.mad#intersection": "VersionRange -> VersionRange -> VersionRange",
       "src/Color.mad#red": "String -> String",
       "src/Color.mad#IS_COLOR_ENABLED": "Boolean",
+      "src/Version.mad#bumpPatch": "Version -> Version",
+      "src/Version.mad#patch": "Version -> Integer",
       "src/Config.mad#defaultConfig": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
       "src/Validate.mad#hasFailed": "Validate a -> Boolean",
       "src/Validate.mad#unsafeGetValidationValue": "Validate a -> a",
@@ -44,9 +47,11 @@
       "src/Version.mad#max": "Version -> Version -> Version",
       "src/Context.mad#initialContext": "{ installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }",
       "src/Validate.mad#getWarnings": "Validate a -> List Warning",
-      "src/Version.mad#intersectRanges": "VersionRange -> VersionRange -> VersionRange",
+      "src/Version.mad#minor": "Version -> Integer",
       "src/Parse/MadlibJson.mad#parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
       "src/Parse/VersionLock.mad#parse": "String -> Wish String { buildHash :: String, jsApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, llvmApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, versionHash :: String }",
+      "src/Version.mad#withinRange": "VersionRange -> Version -> Boolean",
+      "src/Version.mad#major": "Version -> Integer",
       "src/Hash.mad#hashVersion": "Version -> String",
       "src/Version.mad#showVersion": "Version -> String",
       "src/Validate.mad#failWithRecoverable": "Error -> Validate a -> Validate a",
@@ -58,14 +63,16 @@
       "src/Context.mad#hasPackageBeenInstalled": "String -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> Boolean",
       "src/Download.mad#downloadIfNotCached": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> Wish {} DownloadResult",
       "src/Context.mad#updateEntry": "String -> { range :: VersionRange, version :: Maybe Version } -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }",
+      "src/Version.mad#bumpMajor": "Version -> Version",
       "src/Context.mad#findByName": "String -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { range :: VersionRange, version :: Maybe Version }",
       "src/Color.mad#safeColor": "(a -> a) -> a -> a",
       "src/Version.mad#parse": "String -> Maybe Version",
+      "src/Version.mad#bump": "Bump -> Version -> Version",
       "src/Error.mad#printError": "a -> Error -> a",
-      "src/Version.mad#isInRange": "Version -> VersionRange -> Boolean",
       "src/Validate.mad#fail": "Error -> Validate a -> Validate a",
       "src/Parse/MadlibJson.mad#load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
-      "src/Version.mad#createRange": "Maybe Version -> Maybe Version -> VersionRange"
+      "src/Version.mad#createRange": "Maybe Version -> Maybe Version -> VersionRange",
+      "src/Version.mad#bumpMinor": "Version -> Version"
     },
     "apiTypes": {
       "src/Warning.mad#Warning": [
@@ -90,6 +97,11 @@
         "FromVersion Version",
         "UntilVersion Version",
         "AnyVersion"
+      ],
+      "src/Version.mad#Bump": [
+        "Major",
+        "Minor",
+        "Patch"
       ],
       "src/Error.mad#Error": [
         "CopyToMadlibModulesFailed String",
@@ -125,8 +137,11 @@
     "apiNames": {
       "src/Run.mad#run": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> Wish {} {}",
       "src/Color.mad#tabRed": "String -> a -> a",
+      "src/Version.mad#intersection": "VersionRange -> VersionRange -> VersionRange",
       "src/Color.mad#red": "String -> String",
       "src/Color.mad#IS_COLOR_ENABLED": "Boolean",
+      "src/Version.mad#bumpPatch": "Version -> Version",
+      "src/Version.mad#patch": "Version -> Integer",
       "src/Config.mad#defaultConfig": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
       "src/Validate.mad#hasFailed": "Validate a -> Boolean",
       "src/Validate.mad#unsafeGetValidationValue": "Validate a -> a",
@@ -146,9 +161,11 @@
       "src/Version.mad#max": "Version -> Version -> Version",
       "src/Context.mad#initialContext": "{ installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }",
       "src/Validate.mad#getWarnings": "Validate a -> List Warning",
-      "src/Version.mad#intersectRanges": "VersionRange -> VersionRange -> VersionRange",
+      "src/Version.mad#minor": "Version -> Integer",
       "src/Parse/MadlibJson.mad#parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
       "src/Parse/VersionLock.mad#parse": "String -> Wish String { buildHash :: String, jsApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, llvmApi :: { apiAliases :: Dictionary String String, apiInstances :: List String, apiInterfaces :: Dictionary String (Dictionary String String), apiNames :: Dictionary String String, apiTypes :: Dictionary String (List String) }, versionHash :: String }",
+      "src/Version.mad#withinRange": "VersionRange -> Version -> Boolean",
+      "src/Version.mad#major": "Version -> Integer",
       "src/Hash.mad#hashVersion": "Version -> String",
       "src/Version.mad#showVersion": "Version -> String",
       "src/Validate.mad#failWithRecoverable": "Error -> Validate a -> Validate a",
@@ -160,14 +177,16 @@
       "src/Context.mad#hasPackageBeenInstalled": "String -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> Boolean",
       "src/Download.mad#downloadIfNotCached": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> Wish {} DownloadResult",
       "src/Context.mad#updateEntry": "String -> { range :: VersionRange, version :: Maybe Version } -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } }",
+      "src/Version.mad#bumpMajor": "Version -> Version",
       "src/Context.mad#findByName": "String -> { installedPackages :: List String, versions :: Dictionary String { range :: VersionRange, version :: Maybe Version } } -> { range :: VersionRange, version :: Maybe Version }",
       "src/Color.mad#safeColor": "(a -> a) -> a -> a",
       "src/Version.mad#parse": "String -> Maybe Version",
+      "src/Version.mad#bump": "Bump -> Version -> Version",
       "src/Error.mad#printError": "a -> Error -> a",
-      "src/Version.mad#isInRange": "Version -> VersionRange -> Boolean",
       "src/Validate.mad#fail": "Error -> Validate a -> Validate a",
       "src/Parse/MadlibJson.mad#load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
-      "src/Version.mad#createRange": "Maybe Version -> Maybe Version -> VersionRange"
+      "src/Version.mad#createRange": "Maybe Version -> Maybe Version -> VersionRange",
+      "src/Version.mad#bumpMinor": "Version -> Version"
     },
     "apiTypes": {
       "src/Warning.mad#Warning": [
@@ -193,6 +212,11 @@
         "UntilVersion Version",
         "AnyVersion"
       ],
+      "src/Version.mad#Bump": [
+        "Major",
+        "Minor",
+        "Patch"
+      ],
       "src/Error.mad#Error": [
         "CopyToMadlibModulesFailed String",
         "MadlibDotJsonCouldNotBeLoaded String"
@@ -204,5 +228,5 @@
       ]
     }
   },
-  "versionHash": "fbacc30a1f288ebf360ad2de66710082"
+  "versionHash": "25e64aa754c310d45c1e084d574c1bb0"
 }
