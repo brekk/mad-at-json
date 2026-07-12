@@ -1,7 +1,8 @@
 {
   "name": "mad-at-json",
-  "version": "0.0.3",
-  "main": "src/Main.mad",
+  "version": "0.0.4",
+  "main": "src/Library.mad",
+  "bin": "src/Main.mad",
   "importAliases": {
     ".": "src"
   },
