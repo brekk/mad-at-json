@@ -21,23 +21,19 @@ MADLIBDOTJSON = {
   importAliases: Nothing,
   hooks: Nothing,
 }
-
 DEFAULT_DEPENDENCY = {
   description: Just("some dependency"),
   url: "http://url.tld",
   sanitizedUrl: "http___url_tld",
   versionRange: AnyVersion,
-  name: Nothing,
+  name: "",
 }
-
 DEFAULT_INPUT = {
   madlibDotJson: MADLIBDOTJSON,
   versionDotLock: Nothing,
   computedVersionHash: "",
   computedBuildHash: "",
 }
-
-
 test(
   "validate",
   (_) => {
@@ -48,7 +44,7 @@ test(
         initialContext,
       ),
       shouldCopy: true,
-      dependency: { ...DEFAULT_DEPENDENCY, name: Just("package-name") },
+      dependency: { ...DEFAULT_DEPENDENCY, name: "package-name" },
       madlibDotJson: MADLIBDOTJSON,
     })
 
@@ -57,8 +53,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
-
 test(
   "validate - fail",
   (_) => {
@@ -73,7 +67,7 @@ test(
         shouldCopy: true,
         dependency: {
           ...DEFAULT_DEPENDENCY,
-          name: Just("package-name"),
+          name: "package-name",
           versionRange: FromVersion(Version(2, 0, 0)),
         },
         madlibDotJson: MADLIBDOTJSON,
@@ -89,8 +83,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
-
 test(
   "map - Valid",
   (_) => {
@@ -101,7 +93,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "map - NotValid",
   (_) => {
@@ -112,7 +103,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "map - ValidationError not recoverable",
   (_) => {
@@ -123,7 +113,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "map - ValidationError recoverable",
   (_) => {
@@ -134,9 +123,7 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test("pure", (_) => assertEquals(pure(2), Valid(2)))
-
 test(
   "ap - Valid",
   (_) => {
@@ -147,7 +134,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "ap - NotValid",
   (_) => {
@@ -158,7 +144,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "ap - ValidationError not recoverable",
   () => {
@@ -169,7 +154,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "ap - ValidationError recoverable",
   (_) => {
@@ -180,7 +164,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "ap - fn NotValid",
   (_) => {
@@ -191,7 +174,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "ap - fn ValidationError recoverable",
   (_) => {
@@ -202,7 +184,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "ap - fn ValidationError not recoverable",
   (_) => {
@@ -213,8 +194,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
-
 test(
   "chain - ValidationError recoverable",
   (_) => {
@@ -228,8 +207,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
-
 test(
   "combine - Valid and Valid",
   (_) => {
@@ -238,7 +215,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "combine - Valid and NotValid",
   (_) => {
@@ -247,7 +223,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "combine - Valid and ValidationError",
   (_) => {
@@ -256,7 +231,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "combine - NotValid and Valid",
   (_) => {
@@ -265,7 +239,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "combine - NotValid and NotValid",
   (_) => {
@@ -274,7 +247,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "combine - NotValid and ValidationError",
   (_) => {
@@ -290,7 +262,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "combine - ValidationError and Valid",
   (_) => {
@@ -299,7 +270,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "combine - ValidationError and NotValid",
   (_) => {
@@ -311,7 +281,6 @@ test(
     return assertEquals(actual, expected)
   },
 )
-
 test(
   "combine - ValidationError and ValidationError",
   (_) => {

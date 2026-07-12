@@ -13,25 +13,22 @@ import Version from "@/Version"
 
 export alias Dependency = {
   description :: Maybe String,
-  name :: Maybe String,
+  name :: String,
   sanitizedUrl :: String,
   url :: String,
   versionRange :: VersionRange,
 }
-
-
-
 dependencyParser :: J.Parser (List Dependency)
 export dependencyParser = J.field(
   "dependencies",
   J.list(
-    J.map4(
-      (url, description, maybeMinVersion, maybeMaxVersion) => (
+    J.map5(
+      (url, description, maybeMinVersion, maybeMaxVersion, name) => (
         {
           url,
           description,
           versionRange: Version.createRange(maybeMinVersion, maybeMaxVersion),
-          name: Nothing,
+          name,
           sanitizedUrl: sanitizeUrl(url),
         }
       ),
@@ -39,6 +36,7 @@ export dependencyParser = J.field(
       J.field("description", J.maybe(J.string)),
       J.map1(chain(Version.parse), J.maybe(J.field("minVersion", J.string))),
       J.map1(chain(Version.parse), J.maybe(J.field("maxVersion", J.string))),
+      J.field("name", J.string),
     ),
   ),
 )

@@ -245,7 +245,7 @@ buildValidationOutput = (context, madlibDotJson, dependency, rangeResult) => {
   validationOutput = {
     context: updateEntry(name, versionInfo, context),
     shouldCopy,
-    dependency: { ...dependency, name: Just(name) },
+    dependency: { ...dependency, name },
     madlibDotJson,
   }
 
