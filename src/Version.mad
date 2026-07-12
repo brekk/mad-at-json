@@ -11,45 +11,49 @@ import String from "String"
 
 export type Version = Version(Integer, Integer, Integer)
 derive Comparable Version
-
-
 export type VersionRange
   = VersionRange(Version, Version)
   | FromVersion(Version)
   | UntilVersion(Version)
   | AnyVersion
+export type Bump = Major | Minor | Patch
+bump :: Bump -> Version -> Version
+export bump = (k, v) => where(#[k, v]) {
+  #[Major, Version(m, n, p)] =>
+    Version(m + 1, 0, 0)
 
+  #[Minor, Version(m, n, p)] =>
+    Version(m, n + 1, 0)
 
+  #[Patch, Version(m, n, p)] =>
+    Version(m, n, p + 1)
+}
+export bumpMajor = bump(Major)
+export bumpMinor = bump(Minor)
+export bumpPatch = bump(Patch)
 major :: Version -> Integer
-major = where {
+export major = where {
   Version(x, _, _) =>
     x
 }
-
 minor :: Version -> Integer
-minor = where {
+export minor = where {
   Version(_, x, _) =>
     x
 }
-
 patch :: Version -> Integer
-patch = where {
+export patch = where {
   Version(_, _, x) =>
     x
 }
-
 showVersion :: Version -> String
 export showVersion = (version) => pipe(
   map(show),
   String.join("."),
 )([major(version), minor(version), patch(version)])
-
-
 instance Scan Version {
   scan = parse
 }
-
-
 createRange :: Maybe Version -> Maybe Version -> VersionRange
 export createRange = (maybeMin, maybeMax) => where(#[maybeMin, maybeMax]) {
   #[Just(minVersion), Just(maxVersion)] =>
@@ -64,9 +68,6 @@ export createRange = (maybeMin, maybeMax) => where(#[maybeMin, maybeMax]) {
   _ =>
     AnyVersion
 }
-
-
-
 parse :: String -> Maybe Version
 export parse = pipe(
   String.split("."),
@@ -79,10 +80,8 @@ export parse = pipe(
       Nothing
   },
 )
-
-
-isInRange :: Version -> VersionRange -> Boolean
-export isInRange = (version, range) => where(range) {
+withinRange :: VersionRange -> Version -> Boolean
+export withinRange = (range, version) => where(range) {
   FromVersion(start) =>
     ge(version, start)
 
@@ -95,11 +94,8 @@ export isInRange = (version, range) => where(range) {
   AnyVersion =>
     true
 }
-
 bounded :: (Version -> Version -> Boolean) -> Version -> Version -> Version
 bounded = (fn, v1, v2) => fn(v1, v2) ? v2 : v2
-
-
 max :: Version -> Version -> Version
 export max = bounded(ge)
 // max = (v1, v2) => ge(v1, v2) ? v1 : v2
@@ -108,9 +104,8 @@ min :: Version -> Version -> Version
 export min = bounded(le)
 // min = (v1, v2) => le(v1, v2) ? v1 : v2
 
-
-intersectRanges :: VersionRange -> VersionRange -> VersionRange
-export intersectRanges = (range1, range2) => where(#[range1, range2]) {
+intersection :: VersionRange -> VersionRange -> VersionRange
+export intersection = (range1, range2) => where(#[range1, range2]) {
   #[FromVersion(start1), FromVersion(start2)] =>
     FromVersion(max(start1, start2))
 
