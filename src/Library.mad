@@ -7,12 +7,19 @@ import { load, parse } from "@/Parse/MadlibJson"
 
 
 
-export parseDependency = dependencyParser
+/**
+ * MADLIB.JSON
+ */
+export type MadlibDotJson
 export parse
 export load
+/**
+ * DEPENDENCIES
+ */
+
+export parseDependency = dependencyParser
 export type Dependency
-export type MadlibDotJson
-export create
-export createWithRange
-export createWithImplicitRange
+export createDependency = create
+export createDependencyWithRange = createWithRange
+export createDependencyWithImplicitRange = createWithImplicitRange
 export printDependency
