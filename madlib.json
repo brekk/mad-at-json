@@ -13,8 +13,8 @@
       "description": "Study"
     },
     {
-      "minVersion": "0.2.2",
-      "url": "https://github.com/brekk/party-bus/archive/refs/tags/v0.2.2.zip",
+      "minVersion": "0.3.0",
+      "url": "https://github.com/brekk/party-bus/archive/refs/tags/v0.3.0.zip",
       "description": "PartyBus"
     }
   ]

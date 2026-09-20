@@ -1,9 +1,7 @@
 import type { Maybe } from "Maybe"
 
 import type { Dependency } from "@/Parse/Dependency"
-import type { VersionRange } from "@/Version"
 
-import J from "Json/Parse"
 import { Just } from "Maybe"
 import { Nothing } from "Maybe"
 import {} from "Wish"
@@ -13,29 +11,29 @@ import Version from "@/Version"
 
 
 
-createWithRangeAndDescription :: Maybe String
+createWithImplicitRange :: Maybe String
   -> String
   -> String
-  -> Version
-  -> Version
+  -> Maybe Version
+  -> Maybe Version
   -> Dependency
-export createWithRangeAndDescription = (
+export createWithImplicitRange = (
   description,
   name,
   url,
-  minVer,
-  maxVer
-) => ParseDependency.construct(url, description, Just(minVer), Just(maxVer), name)
-export createWithRange = createWithRangeAndDescription(Nothing)
-createWithDescription :: Maybe String -> String -> String -> Version -> Dependency
-export createWithDescription = (d, n, u, min) => ParseDependency.construct(
-  u,
-  d,
-  Just(min),
-  Nothing,
-  n,
+  mMinVer,
+  mMaxVer
+) => ParseDependency.construct(url, description, mMinVer, mMaxVer, name)
+createWithRange :: Maybe String -> String -> String -> Version -> Version -> Dependency
+export createWithRange = (description, name, url, minVer, maxVer) => createWithImplicitRange(
+  description,
+  name,
+  url,
+  Just(minVer),
+  Just(maxVer),
 )
-export create = createWithDescription(Nothing)
+create :: Maybe String -> String -> String -> Version -> Dependency
+export create = (d, n, u, min) => createWithImplicitRange(d, n, u, Just(min), Nothing)
 printDependency :: Dependency -> String
 export printDependency = ({ description, name, url, versionRange }) => `{
   "description": ${description ?? ""},
