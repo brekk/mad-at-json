@@ -3,8 +3,6 @@ import type { Maybe } from "Maybe"
 import type { VersionRange } from "@/Version"
 
 import J from "Json/Parse"
-import { Just } from "Maybe"
-import { Nothing } from "Maybe"
 import {} from "Wish"
 
 import { sanitizeUrl } from "@/URL"
@@ -14,7 +12,7 @@ import Version from "@/Version"
 
 export alias Dependency = {
   description :: Maybe String,
-  name :: String,
+  name :: Maybe String,
   sanitizedUrl :: String,
   url :: String,
   versionRange :: VersionRange,
@@ -39,7 +37,7 @@ export dependencyParser = J.field(
       J.field("description", J.maybe(J.string)),
       J.map1(chain(Version.parse), J.maybe(J.field("minVersion", J.string))),
       J.map1(chain(Version.parse), J.maybe(J.field("maxVersion", J.string))),
-      J.field("name", J.string),
+      J.field("name", J.maybe(J.string)),
     ),
   ),
 )

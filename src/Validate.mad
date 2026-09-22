@@ -1,19 +1,29 @@
 import type { Maybe } from "Maybe"
 
-import type { Context, VersionInfo } from "./Context"
-import type { Dependency } from "./Dependency"
-import type { MadlibDotJson } from "./MadlibDotJson"
-import type { VersionRange } from "./Version"
-import type { VersionDotLock } from "./VersionDotLock"
+import type { Context, VersionInfo } from "@/Context"
+import type { Error } from "@/Error"
+import type { Dependency } from "@/Parse/Dependency"
+import type { MadlibDotJson } from "@/Parse/MadlibJson"
+import type { VersionRange } from "@/Version"
+import type { VersionDotLock } from "@/VersionDotLock"
+import type { Warning } from "@/Warning"
 
 import { always, equals, ifElse, not } from "Function"
 import IO from "IO"
 import { Just, Nothing } from "Maybe"
 import { andDo } from "Monad"
 
-import Color from "./Color"
-import { findByName, updateEntry } from "./Context"
-import { intersectRanges, isInRange } from "./Version"
+import Color from "@/Color"
+import { findByName, updateEntry } from "@/Context"
+import { CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded } from "@/Error"
+import { intersection, withinRange } from "@/Version"
+import {
+  BuildHashCouldNotBeGenerated,
+  InvalidBuildHash,
+  InvalidVersionHash,
+  OutOfRangeVersion,
+  VersionDotLockMissing,
+} from "@/Warning"
 
 
 
@@ -29,13 +39,6 @@ export alias ValidationOutput = {
   madlibDotJson :: MadlibDotJson,
   shouldCopy :: Boolean,
 }
-export type Warning
-  = OutOfRangeVersion
-  | InvalidVersionHash
-  | InvalidBuildHash
-  | VersionDotLockMissing
-  | BuildHashCouldNotBeGenerated
-export type Error = CopyToMadlibModulesFailed(String) | MadlibDotJsonCouldNotBeLoaded(String)
 export type Validate a
   = Valid(a)
   | NotValid(List Warning, a)
@@ -289,9 +292,9 @@ validateVersion = (context, dependency, validationInput) => {
   versionInfo = findByName(madlibDotJson.name, context)
 
   return pipe(
-    intersectRanges(dependency.versionRange),
+    intersection(dependency.versionRange),
     ifElse(
-      isInRange(madlibDotJson.version),
+      withinRange($, madlibDotJson.version),
       buildGoodRangeResult(madlibDotJson, versionInfo),
       buildBadRangeResult(madlibDotJson, versionInfo),
     ),

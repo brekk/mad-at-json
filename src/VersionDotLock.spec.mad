@@ -1,3 +1,5 @@
+import type { Config } from "@/Config"
+
 import ByteArray from "ByteArray"
 import Dict from "Dictionary"
 import { always } from "Function"
@@ -46,12 +48,14 @@ BAD_VERSION_DOT_LOCK = `{
     "apiInterfaces": {}
   }
 }`
+DEFAULT_CONFIG :: Config
 DEFAULT_CONFIG = {
   readFile: always(good(VERSION_DOT_LOCK)),
   writeFile: (_, _) => good({}),
   writeBytes: (_, _) => good({}),
   readDir: always(good([])),
-  exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
+  exec: (_, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
+  execWithConfig: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
   exists: always(good(true)),
   getBytes: always(good({ headers: [], status: 200, body: ByteArray.empty() })),
 }

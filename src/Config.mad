@@ -21,7 +21,6 @@ export alias Config = {
   writeBytes :: String -> ByteArray -> Wish IO.Error {},
   writeFile :: String -> String -> Wish IO.Error {},
 }
-
 defaultConfig :: Config
 export defaultConfig = {
   readFile: File.read,

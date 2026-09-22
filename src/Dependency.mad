@@ -12,7 +12,7 @@ import Version from "@/Version"
 
 
 createWithImplicitRange :: Maybe String
-  -> String
+  -> Maybe String
   -> String
   -> Maybe Version
   -> Maybe Version
@@ -24,7 +24,7 @@ export createWithImplicitRange = (
   mMinVer,
   mMaxVer
 ) => ParseDependency.construct(url, description, mMinVer, mMaxVer, name)
-createWithRange :: Maybe String -> String -> String -> Version -> Version -> Dependency
+createWithRange :: Maybe String -> Maybe String -> String -> Version -> Version -> Dependency
 export createWithRange = (description, name, url, minVer, maxVer) => createWithImplicitRange(
   description,
   name,
@@ -33,7 +33,7 @@ export createWithRange = (description, name, url, minVer, maxVer) => createWithI
   Just(maxVer),
 )
 create :: Maybe String -> String -> String -> Version -> Dependency
-export create = (d, n, u, min) => createWithImplicitRange(d, n, u, Just(min), Nothing)
+export create = (d, n, u, min) => createWithImplicitRange(d, Just(n), u, Just(min), Nothing)
 printDependency :: Dependency -> String
 export printDependency = ({ description, name, url, versionRange }) => `{
   "description": ${description ?? ""},
