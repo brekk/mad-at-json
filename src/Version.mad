@@ -94,16 +94,10 @@ export withinRange = (range, version) => where(range) {
   AnyVersion =>
     true
 }
-bounded :: (Version -> Version -> Boolean) -> Version -> Version -> Version
-bounded = (fn, v1, v2) => fn(v1, v2) ? v2 : v2
 max :: Version -> Version -> Version
-export max = bounded(ge)
-// max = (v1, v2) => ge(v1, v2) ? v1 : v2
-
+export max = (v1, v2) => ge(v1, v2) ? v1 : v2
 min :: Version -> Version -> Version
-export min = bounded(le)
-// min = (v1, v2) => le(v1, v2) ? v1 : v2
-
+export min = (v1, v2) => le(v1, v2) ? v1 : v2
 intersection :: VersionRange -> VersionRange -> VersionRange
 export intersection = (range1, range2) => where(#[range1, range2]) {
   #[FromVersion(start1), FromVersion(start2)] =>
