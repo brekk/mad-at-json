@@ -1,13 +1,21 @@
-import type { Validate } from "@/Validate"
+import type { Validate } from "./Validate"
 
 import { Just, Nothing } from "Maybe"
 import { assertEquals, test } from "Test"
 
-import { initialContext, updateEntry } from "@/Context"
-import { MadlibDotJsonCouldNotBeLoaded } from "@/Error"
-import { NotValid, Valid, ValidationError, combine, validate } from "@/Validate"
-import { AnyVersion, FromVersion, Version } from "@/Version"
-import { InvalidBuildHash, InvalidVersionHash, OutOfRangeVersion } from "@/Warning"
+import { initialContext, updateEntry } from "./Context"
+import {
+  InvalidBuildHash,
+  InvalidVersionHash,
+  MadlibDotJsonCouldNotBeLoaded,
+  NotValid,
+  OutOfRangeVersion,
+  Valid,
+  ValidationError,
+  combine,
+  validate,
+} from "./Validate"
+import { AnyVersion, FromVersion, Version } from "./Version"
 
 
 
@@ -26,7 +34,7 @@ DEFAULT_DEPENDENCY = {
   url: "http://url.tld",
   sanitizedUrl: "http___url_tld",
   versionRange: AnyVersion,
-  name: "",
+  name: Nothing,
 }
 DEFAULT_INPUT = {
   madlibDotJson: MADLIBDOTJSON,
@@ -44,7 +52,7 @@ test(
         initialContext,
       ),
       shouldCopy: true,
-      dependency: { ...DEFAULT_DEPENDENCY, name: "package-name" },
+      dependency: { ...DEFAULT_DEPENDENCY, name: Just("package-name") },
       madlibDotJson: MADLIBDOTJSON,
     })
 
@@ -67,7 +75,7 @@ test(
         shouldCopy: true,
         dependency: {
           ...DEFAULT_DEPENDENCY,
-          name: "package-name",
+          name: Just("package-name"),
           versionRange: FromVersion(Version(2, 0, 0)),
         },
         madlibDotJson: MADLIBDOTJSON,
