@@ -1,9 +1,9 @@
-import { mapChars } from "String"
+import String from "String"
 
 
 
-replaceSpecialChar :: Char -> Char
-replaceSpecialChar = where {
+slugChar :: Char -> Char
+slugChar = where {
   ':' =>
     '_'
 
@@ -31,7 +31,5 @@ replaceSpecialChar = where {
   char =>
     char
 }
-
-
 sanitizeUrl :: String -> String
-export sanitizeUrl = mapChars(replaceSpecialChar)
+export sanitizeUrl = String.mapChars(slugChar)

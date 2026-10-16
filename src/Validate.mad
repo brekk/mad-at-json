@@ -276,12 +276,12 @@ buildValidationOutput :: Context
   -> Validate RangeOutput
   -> Validate ValidationOutput
 buildValidationOutput = (context, madlibDotJson, dependency, rangeResult) => {
-  rangeOutput = unsafeGetValidationValue(rangeResult)
-
+  { shouldCopy, versionInfo } = unsafeGetValidationValue(rangeResult)
+  { name } = madlibDotJson
   validationOutput = {
-    context: updateEntry(madlibDotJson.name, rangeOutput.versionInfo, context),
-    shouldCopy: rangeOutput.shouldCopy,
-    dependency: { ...dependency, name: madlibDotJson.name },
+    context: updateEntry(name, versionInfo, context),
+    shouldCopy: shouldCopy,
+    dependency: { ...dependency, name },
     madlibDotJson,
   }
 
