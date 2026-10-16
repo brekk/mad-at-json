@@ -1,8 +1,7 @@
 import type { Wish } from "Wish"
 
-import type { Config } from "@/Config"
-
 import { Left, Right } from "Either"
+import File from "File"
 import { always } from "Function"
 import J from "Json/Parse"
 import { bad, bichain, mapRej } from "Wish"
@@ -16,16 +15,12 @@ export alias PublicAPI = {
   apiNames :: Dictionary String String,
   apiTypes :: Dictionary String (List String),
 }
-
-
 export alias VersionDotLock = {
   buildHash :: String,
   jsApi :: PublicAPI,
   llvmApi :: PublicAPI,
   versionHash :: String,
 }
-
-
 apiParser :: J.Parser PublicAPI
 apiParser = J.map5(
   (apiNames, apiInstances, apiAliases, apiTypes, apiInterfaces) => (
@@ -37,8 +32,6 @@ apiParser = J.map5(
   J.field("apiTypes", J.dict(J.list(J.string))),
   J.field("apiInterfaces", J.dict(J.dict(J.string))),
 )
-
-
 parser :: J.Parser VersionDotLock
 parser = J.map4(
   (buildHash, versionHash, jsApi, llvmApi) => ({ buildHash, versionHash, jsApi, llvmApi }),
@@ -47,8 +40,6 @@ parser = J.map4(
   J.field("jsApi", apiParser),
   J.field("llvmApi", apiParser),
 )
-
-
 parse :: String -> Wish String VersionDotLock
 export parse = pipe(
   J.parse(parser),
@@ -60,11 +51,9 @@ export parse = pipe(
       of(a)
   },
 )
-
-
-load :: Config -> String -> Wish String VersionDotLock
-export load = (config, path) => pipe(
-  config.readFile,
+load :: String -> Wish String VersionDotLock
+export load = (path) => pipe(
+  File.read,
   bichain(
     always(bad(`version.lock file not found at path '${path}'`)),
     pipe(

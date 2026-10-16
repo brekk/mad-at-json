@@ -1,8 +1,7 @@
 import type { Wish } from "Wish"
 
-import type { Config } from "./Config"
-
 import { Left, Right } from "Either"
+import File from "File"
 import { always } from "Function"
 import J from "Json/Parse"
 import { bad, bichain, mapRej } from "Wish"
@@ -52,9 +51,9 @@ export parse = pipe(
       of(a)
   },
 )
-load :: Config -> String -> Wish String VersionDotLock
-export load = (config, path) => pipe(
-  config.readFile,
+load :: String -> Wish String VersionDotLock
+export load = (path) => pipe(
+  File.read,
   bichain(
     always(bad(`version.lock file not found at path '${path}'`)),
     pipe(

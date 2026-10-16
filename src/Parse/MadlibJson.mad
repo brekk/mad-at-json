@@ -1,9 +1,8 @@
 import type { Maybe } from "Maybe"
 import type { Wish } from "Wish"
 
-import type { Config } from "@/Config"
-
 import { Left, Right } from "Either"
+import File from "File"
 import { always } from "Function"
 import J from "Json/Parse"
 import { Just, Nothing } from "Maybe"
@@ -60,7 +59,7 @@ parser = J.chain8(
   J.field("name", J.string),
   J.field("version", J.string),
   J.maybe(J.field("madlibVersion", J.string)),
-  J.maybe(Parsed.dependencyParser),
+  J.maybe(Parsed.dependenciesParser),
   J.field("main", J.string),
   J.maybe(J.field("bin", J.string)),
   J.maybe(J.field("importAliases", J.dict(J.string))),
@@ -77,9 +76,9 @@ export parse = pipe(
       of(a)
   },
 )
-load :: Config -> String -> Wish String MadlibDotJson
-export load = (config, path) => pipe(
-  config.readFile,
+load :: String -> Wish String MadlibDotJson
+export load = (path) => pipe(
+  File.read,
   mapRej(always(`madlib.json file not found at path '${path}'`)),
   chain(parse),
   mapRej(
