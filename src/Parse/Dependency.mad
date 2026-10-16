@@ -27,9 +27,8 @@ instance Json Dependency {
   toJson = ({ description, name, sanitizedUrl, url, versionRange }) => P.object([
     #["description", P.string(description ?? "")],
     #["name", P.string(name)],
-    #["sanitizedUrl", P.string(sanitizedUrl)],
     #["url", P.string(url)],
-    #["versionRange", toJson(versionRange)],
+    ...Version.toJsonPairs(versionRange),
   ])
 }
 // dap up your deps
