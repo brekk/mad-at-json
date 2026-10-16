@@ -9,13 +9,11 @@ export IS_COLOR_ENABLED = do {
   noColor = Process.getEnv("NO_COLOR")
   return noColor == Just("") || noColor == Nothing
 }
-
 export boundColor = (yes, fn, txt) => yes ? fn(txt) : txt
 export safeColor = boundColor(IS_COLOR_ENABLED)
 export red = safeColor(IO.red)
 export yellow = safeColor(IO.yellow)
 export green = safeColor(IO.green)
-
 tabbedColorPrint = (fn, msg) => "  - " ++ fn(msg)
 cprint = (fn, msg, a) => IO.putLineAndPass(tabbedColorPrint(fn, msg), a)
 export tabYellow = cprint(yellow)

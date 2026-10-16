@@ -148,13 +148,13 @@ formatCopyError = (err) => pipe(
     ),
     I,
   ),
-  map((line) => `    ${line}`),
+  map(mappend("    ")),
   String.unlines,
 )(err)
 copyPackageFromTmp :: Validate ValidationOutput -> Wish {} (Validate ValidationOutput)
-copyPackageFromTmp = (validationResult) => where(validationResult) {
+copyPackageFromTmp = (vr) => where(vr) {
   ValidationError(_, _, _) =>
-    of(validationResult)
+    of(vr)
 
   _ =>
     pipe(
@@ -164,24 +164,22 @@ copyPackageFromTmp = (validationResult) => where(validationResult) {
         pipe(
           .dependency,
           copyPackageToMadlibModules,
-          andDo(of(validationResult)),
+          andDo(of(vr)),
         ),
-        K(of(validationResult)),
+        K(of(vr)),
       ),
       Wish.discardError(
-        (commandError) => pipe(
+        ({ stderr }) => pipe(
           unsafeGetValidationValue,
           .madlibDotJson,
           .name,
           (n) => failWithRecoverable(
-            CopyToMadlibModulesFailed(
-              `Failed to copy '${n}'${formatCopyError(commandError.stderr)}`,
-            ),
-            validationResult,
+            CopyToMadlibModulesFailed(`Failed to copy '${n}'${formatCopyError(stderr)}`),
+            vr,
           ),
-        )(validationResult),
+        )(vr),
       ),
-    )(validationResult)
+    )(vr)
 }
 displayInstalling :: Validate ValidationOutput -> Validate ValidationOutput
 displayInstalling = (validation) => {
@@ -241,7 +239,12 @@ runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
         IO.putLine(
           `Executing postInstall script for package '${madlibDotJson.name}', it may take a while.`,
         )
-        _ <- Process.exec("sh", ["-c", script], { ...Process.DEFAULT_COMMAND_OPTIONS, cwd })
+        _ <- Shroud.coverWith(
+          { ...Process.DEFAULT_COMMAND_OPTIONS, cwd },
+          Shroud.littleDeath,
+          "sh",
+          ["-c", script],
+        )
         IO.putLine(`postInstall script executed for package '${madlibDotJson.name}'`)
         return of({})
       }

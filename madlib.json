@@ -18,8 +18,8 @@
       "description": "PartyBus"
     },
     {
-      "minVersion": "2.0.0",
-      "url": "https://github.com/brekk/shroud/archive/refs/tags/v2.0.0.zip",
+      "minVersion": "3.0.0",
+      "url": "https://github.com/brekk/shroud/archive/refs/tags/v3.0.0.zip",
       "description": "shroud"
     }
   ]
