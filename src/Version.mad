@@ -202,6 +202,6 @@ export toJsonPairs = where {
     []
 }
 export hash = pipe(
-  showVersion,
+  show,
   Crypto.md5,
 )
