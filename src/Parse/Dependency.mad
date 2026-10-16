@@ -2,7 +2,10 @@ import type { Maybe } from "Maybe"
 
 import type { VersionRange } from "@/Version"
 
+import {} from "Json"
 import J from "Json/Parse"
+import P from "Json/Print"
+import { Just } from "Maybe"
 import {} from "Wish"
 
 import { sanitizeUrl } from "@/URL"
@@ -12,10 +15,21 @@ import Version from "@/Version"
 
 export alias Dependency = {
   description :: Maybe String,
-  name :: Maybe String,
+  name :: String,
   sanitizedUrl :: String,
   url :: String,
   versionRange :: VersionRange,
+}
+instance Json Dependency {
+  fromJson = dependencyParser
+
+  toJson = ({ description, name, sanitizedUrl, url, versionRange }) => P.object([
+    #["description", P.string(description ?? "")],
+    #["name", P.string(name)],
+    #["sanitizedUrl", P.string(sanitizedUrl)],
+    #["url", P.string(url)],
+    #["versionRange", toJson(versionRange)],
+  ])
 }
 // dap up your deps
 export construct = (url, description, maybeMinVersion, maybeMaxVersion, name) => (
@@ -27,17 +41,18 @@ export construct = (url, description, maybeMinVersion, maybeMaxVersion, name) =>
     sanitizedUrl: sanitizeUrl(url),
   }
 )
-dependencyParser :: J.Parser (List Dependency)
-export dependencyParser = J.field(
-  "dependencies",
-  J.list(
-    J.map5(
-      construct,
-      J.field("url", J.string),
-      J.field("description", J.maybe(J.string)),
-      J.map1(chain(Version.parse), J.maybe(J.field("minVersion", J.string))),
-      J.map1(chain(Version.parse), J.maybe(J.field("maxVersion", J.string))),
-      J.field("name", J.maybe(J.string)),
-    ),
-  ),
+versionField = (key) => pipe(
+  J.field($, J.string),
+  J.maybe,
+  J.map1(chain(Version.parse)),
+)(key)
+export dependencyParser = J.map5(
+  construct,
+  J.field("url", J.string),
+  J.field("description", J.maybe(J.string)),
+  versionField("minVersion"),
+  versionField("maxVersion"),
+  J.field("name", J.string),
 )
+dependenciesParser :: J.Parser (List Dependency)
+export dependenciesParser = J.field("dependencies", J.list(dependencyParser))

@@ -25,8 +25,6 @@ export alias MadlibDotJson = {
   name :: String,
   version :: Version.Version,
 }
-
-
 makeMadlibDotJson :: String
   -> String
   -> Maybe String
@@ -56,8 +54,6 @@ makeMadlibDotJson = (
       }', but it should have the form x.y.z where x, y and z are numbers.`,
     )
 }
-
-
 parser :: J.Parser MadlibDotJson
 parser = J.chain8(
   makeMadlibDotJson,
@@ -70,8 +66,6 @@ parser = J.chain8(
   J.maybe(J.field("importAliases", J.dict(J.string))),
   J.maybe(J.field("hooks", J.dict(J.string))),
 )
-
-
 parse :: String -> Wish String MadlibDotJson
 export parse = pipe(
   J.parse(parser),
@@ -83,8 +77,6 @@ export parse = pipe(
       of(a)
   },
 )
-
-
 load :: Config -> String -> Wish String MadlibDotJson
 export load = (config, path) => pipe(
   config.readFile,

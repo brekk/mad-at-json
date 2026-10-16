@@ -1,7 +1,11 @@
 import type { Maybe } from "Maybe"
 
 import { ge, le } from "Compare"
+import Crypto from "Crypto"
 import {} from "Integer"
+import Json from "Json"
+import J from "Json/Parse"
+import P from "Json/Print"
 import {} from "List"
 import { Just, Nothing } from "Maybe"
 import {} from "Scan"
@@ -11,11 +15,104 @@ import String from "String"
 
 export type Version = Version(Integer, Integer, Integer)
 derive Comparable Version
+instance Json Version {
+  fromJson = parseJsonVersion
+
+  toJson = pipe(
+    showVersion,
+    P.string,
+  )
+}
+parseJsonVersion :: J.Parser Version
+parseJsonVersion = chain(
+  pipe(
+    parse,
+    where {
+      Just(v) =>
+        J.succeed(v)
+
+      _ =>
+        J.fail(`Invalid Version`)
+    },
+  ),
+  J.string,
+)
 export type VersionRange
   = VersionRange(Version, Version)
   | FromVersion(Version)
   | UntilVersion(Version)
   | AnyVersion
+instance Json VersionRange {
+  fromJson = versionRangeFromJson
+
+  toJson = where {
+    VersionRange(versionA, versionB) =>
+      P.object([
+        #["tag", P.string("VersionRange")],
+        #[
+          "minVersion",
+          pipe(
+            showVersion,
+            P.string,
+          )(versionA),
+        ],
+        #[
+          "maxVersion",
+          pipe(
+            showVersion,
+            P.string,
+          )(versionB),
+        ],
+      ])
+
+    FromVersion(versionA) =>
+      P.object([
+        #["tag", P.string("FromVersion")],
+        #[
+          "minVersion",
+          pipe(
+            showVersion,
+            P.string,
+          )(versionA),
+        ],
+      ])
+
+    UntilVersion(versionB) =>
+      P.object([
+        #["tag", P.string("UntilVersion")],
+        #[
+          "maxVersion",
+          pipe(
+            showVersion,
+            P.string,
+          )(versionB),
+        ],
+      ])
+
+    _ =>
+      P.object([#["tag", P.string("AnyVersion")]])
+  }
+}
+taggedFromJson = (construct) => pipe(
+  J.field("tag"),
+  chain(construct),
+)(J.string)
+versionRangeFromTag = pipe(
+  (x) => if (x == "VersionRange") do {
+    minV <- J.field("minVersion", parseJsonVersion)
+    maxV <- J.field("maxVersion", parseJsonVersion)
+    return J.succeed(VersionRange(minV, maxV))
+  } else if (x == "FromVersion") do {
+    minV <- J.field("minVersion", parseJsonVersion)
+    return J.succeed(FromVersion(minV))
+  } else if (x == "UntilVersion") do {
+    maxV <- J.field("minVersion", parseJsonVersion)
+    return J.succeed(UntilVersion(maxV))
+  } else {
+    J.succeed(AnyVersion)
+  },
+)
+versionRangeFromJson = taggedFromJson(versionRangeFromTag)
 export type Bump = Major | Minor | Patch
 bump :: Bump -> Version -> Version
 export bump = (k, v) => where(#[k, v]) {
@@ -157,3 +254,7 @@ export printRange = where {
   _ =>
     MIN_VERSION ++ "*"
 }
+export hash = pipe(
+  show,
+  Crypto.md5,
+)
