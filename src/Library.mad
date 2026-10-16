@@ -1,9 +1,14 @@
-import type { Dependency } from "@/Parse/Dependency"
-import type { MadlibDotJson } from "@/Parse/MadlibJson"
+import type { Dependency } from "@model/Parse/Dependency"
+import type { MadlibDotJson } from "@model/Parse/MadlibJson"
 
-import { create, createWithImplicitRange, createWithRange, printDependency } from "@/Dependency"
-import { dependencyParser } from "@/Parse/Dependency"
-import { load, parse } from "@/Parse/MadlibJson"
+import {
+  create,
+  createWithImplicitRange,
+  createWithRange,
+  printDependency,
+} from "@model/Dependency"
+import { dependencyParser } from "@model/Parse/Dependency"
+import { load, parse } from "@model/Parse/MadlibJson"
 
 
 

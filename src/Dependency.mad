@@ -1,13 +1,13 @@
 import type { Maybe } from "Maybe"
 
-import type { Dependency } from "@/Parse/Dependency"
+import type { Dependency } from "@model/Parse/Dependency"
 
 import { Just } from "Maybe"
 import { Nothing } from "Maybe"
 import {} from "Wish"
 
-import ParseDependency from "@/Parse/Dependency"
-import Version from "@/Version"
+import ParseDependency from "@model/Parse/Dependency"
+import Version from "@model/Version"
 
 
 

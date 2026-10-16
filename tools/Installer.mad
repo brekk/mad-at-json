@@ -1,11 +1,11 @@
 import type { Maybe } from "Maybe"
 import type { Wish } from "Wish"
 
-import type { Context } from "@/Context"
-import type { Dependency } from "@/Parse/Dependency"
-import type { MadlibDotJson } from "@/Parse/MadlibJson"
-import type { VersionDotLock } from "@/Parse/VersionLock"
-import type { Validate, ValidationInput, ValidationOutput } from "@/Validate"
+import type { Context } from "@model/Context"
+import type { Dependency } from "@model/Parse/Dependency"
+import type { MadlibDotJson } from "@model/Parse/MadlibJson"
+import type { VersionDotLock } from "@model/Parse/VersionLock"
+import type { Validate, ValidationInput, ValidationOutput } from "@model/Validate"
 
 import { liftA3 } from "Applicative"
 import { gt } from "Compare"
@@ -24,13 +24,13 @@ import Wish from "Wish"
 
 import Shroud from "shroud"
 
-import Color from "@/Color"
-import Constants from "@/Constants"
-import { addInstalledPackage, hasPackageBeenInstalled, initialContext } from "@/Context"
-import { DownloadError, Downloaded, downloadIfNotCached } from "@/Download"
-import { CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded, printError } from "@/Error"
-import MadlibDotJson from "@/Parse/MadlibJson"
-import VersionDotLock from "@/Parse/VersionLock"
+import Color from "@model/Color"
+import Constants from "@model/Constants"
+import { addInstalledPackage, hasPackageBeenInstalled, initialContext } from "@model/Context"
+import { DownloadError, Downloaded, downloadIfNotCached } from "@model/Download"
+import { CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded, printError } from "@model/Error"
+import MadlibDotJson from "@model/Parse/MadlibJson"
+import VersionDotLock from "@model/Parse/VersionLock"
 import {
   NotValid,
   Valid,
@@ -38,9 +38,9 @@ import {
   failWithRecoverable,
   unsafeGetValidationValue,
   validate,
-} from "@/Validate"
-import Version from "@/Version"
-import { BuildHashCouldNotBeGenerated, VersionDotLockMissing, printWarning } from "@/Warning"
+} from "@model/Validate"
+import Version from "@model/Version"
+import { BuildHashCouldNotBeGenerated, VersionDotLockMissing, printWarning } from "@model/Warning"
 
 
 

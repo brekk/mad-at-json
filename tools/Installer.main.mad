@@ -2,7 +2,7 @@ import { identity } from "Function"
 import IO from "IO"
 import { fulfill } from "Wish"
 
-import { run } from "@/Run"
+import { run } from "@tools/Installer"
 
 
 

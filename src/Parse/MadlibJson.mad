@@ -9,8 +9,8 @@ import { Just, Nothing } from "Maybe"
 import Wish from "Wish"
 import { bad, mapRej } from "Wish"
 
-import Parsed from "@/Parse/Dependency"
-import Version from "@/Version"
+import Parsed from "@model/Parse/Dependency"
+import Version from "@model/Version"
 
 
 

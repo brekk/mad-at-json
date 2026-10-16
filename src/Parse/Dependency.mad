@@ -1,6 +1,6 @@
 import type { Maybe } from "Maybe"
 
-import type { VersionRange } from "@/Version"
+import type { VersionRange } from "@model/Version"
 
 import {} from "Json"
 import J from "Json/Parse"
@@ -8,9 +8,9 @@ import P from "Json/Print"
 import { Just } from "Maybe"
 import {} from "Wish"
 
-import Log from "@/Log"
-import { sanitizeUrl } from "@/URL"
-import Version from "@/Version"
+import Log from "@model/Log"
+import { sanitizeUrl } from "@model/URL"
+import Version from "@model/Version"
 
 
 

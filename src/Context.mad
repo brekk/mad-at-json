@@ -1,33 +1,23 @@
 import type { Maybe } from "Maybe"
+
 import type { Version, VersionRange } from "./Version"
 
-import { Just, Nothing } from "Maybe"
 import Dict from "Dictionary"
-import List from "List"
 import { identity, ifElse, not } from "Function"
+import List from "List"
+import { Just, Nothing } from "Maybe"
 
-import { AnyVersion } from "./Version"
+import { AnyVersion } from "@model/Version"
 
 
 
-export alias VersionInfo = {
-  version :: Maybe Version,
-  range   :: VersionRange
-}
-
+export alias VersionInfo = { range :: VersionRange, version :: Maybe Version }
 export alias Context = {
+  installedPackages :: List String,
   versions :: Dictionary String VersionInfo,
-  installedPackages :: List String
 }
-
-
 initialContext :: Context
-export initialContext = {
-  versions: Dict.empty,
-  installedPackages: []
-}
-
-
+export initialContext = { versions: Dict.empty, installedPackages: [] }
 findByName :: String -> Context -> VersionInfo
 export findByName = (name, context) => pipe(
   .versions,
@@ -37,33 +27,30 @@ export findByName = (name, context) => pipe(
       found
 
     Nothing =>
-      {
-        version: Nothing,
-        range: AnyVersion
-      }
-  }
+      { version: Nothing, range: AnyVersion }
+  },
 )(context)
-
 updateEntry :: String -> VersionInfo -> Context -> Context
 export updateEntry = (name, versionInfo, context) => pipe(
   .versions,
   Dict.insert(name, versionInfo),
-  (versions) => ({ ...context, versions })
+  (versions) => ({ ...context, versions }),
 )(context)
-
 addInstalledPackage :: String -> Context -> Context
 export addInstalledPackage = (sanitizedUrl, context) => pipe(
   .installedPackages,
   ifElse(
-    pipe(List.includes(sanitizedUrl), not),
+    pipe(
+      List.includes(sanitizedUrl),
+      not,
+    ),
     List.append(sanitizedUrl),
-    identity
+    identity,
   ),
-  (installedPackages) => ({ ...context, installedPackages })
+  (installedPackages) => ({ ...context, installedPackages }),
 )(context)
-
 hasPackageBeenInstalled :: String -> Context -> Boolean
 export hasPackageBeenInstalled = (sanitizedUrl, context) => pipe(
   .installedPackages,
-  List.includes(sanitizedUrl)
+  List.includes(sanitizedUrl),
 )(context)

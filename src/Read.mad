@@ -1,6 +1,6 @@
 import File from "File"
 
-import { parse } from "@/Parse/MadlibJson"
+import { parse } from "@model/Parse/MadlibJson"
 
 
 

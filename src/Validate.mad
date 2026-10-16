@@ -1,28 +1,28 @@
 import type { Maybe } from "Maybe"
 
-import type { Context, VersionInfo } from "@/Context"
-import type { Error } from "@/Error"
-import type { Dependency } from "@/Parse/Dependency"
-import type { MadlibDotJson } from "@/Parse/MadlibJson"
-import type { VersionDotLock } from "@/Parse/VersionLock"
-import type { VersionRange } from "@/Version"
-import type { Warning } from "@/Warning"
+import type { Context, VersionInfo } from "@model/Context"
+import type { Error } from "@model/Error"
+import type { Dependency } from "@model/Parse/Dependency"
+import type { MadlibDotJson } from "@model/Parse/MadlibJson"
+import type { VersionDotLock } from "@model/Parse/VersionLock"
+import type { VersionRange } from "@model/Version"
+import type { Warning } from "@model/Warning"
 
 import Fn from "Function"
 import IO from "IO"
 import { Just, Nothing } from "Maybe"
 import { andDo } from "Monad"
 
-import Color from "@/Color"
-import { findByName, updateEntry } from "@/Context"
-import { CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded } from "@/Error"
-import { intersection, withinRange } from "@/Version"
+import Color from "@model/Color"
+import { findByName, updateEntry } from "@model/Context"
+import { CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded } from "@model/Error"
+import { intersection, withinRange } from "@model/Version"
 import {
   InvalidBuildHash,
   InvalidVersionHash,
   OutOfRangeVersion,
   VersionDotLockMissing,
-} from "@/Warning"
+} from "@model/Warning"
 
 
 

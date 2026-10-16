@@ -4,7 +4,9 @@
   "main": "src/Library.mad",
   "bin": "src/Main.mad",
   "importAliases": {
-    ".": "src"
+    ".": ".",
+    "model": "src",
+    "tools": "tools"
   },
   "dependencies": [
     {

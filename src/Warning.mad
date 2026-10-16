@@ -1,4 +1,4 @@
-import { tabYellow } from "@/Color"
+import { tabYellow } from "@model/Color"
 
 
 
@@ -8,8 +8,6 @@ export type Warning
   | InvalidBuildHash
   | VersionDotLockMissing
   | BuildHashCouldNotBeGenerated
-
-
 printWarning :: a -> Warning -> a
 export printWarning = (a, warning) => where(warning) {
   OutOfRangeVersion =>

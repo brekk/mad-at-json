@@ -1,6 +1,6 @@
 import type { Wish } from "Wish"
 
-import type { Dependency } from "@/Parse/Dependency"
+import type { Dependency } from "@model/Parse/Dependency"
 
 import File from "File"
 import FilePath from "FilePath"
@@ -13,7 +13,7 @@ import { bad, discardError, mapRej } from "Wish"
 
 import Shroud from "shroud"
 
-import Constants from "@/Constants"
+import Constants from "@model/Constants"
 
 
 
