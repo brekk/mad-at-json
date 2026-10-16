@@ -20,7 +20,7 @@ import { andDo } from "Monad"
 import Process from "Process"
 import String from "String"
 import Tuple from "Tuple"
-import { bad, bichain, chainRej, discardError, mapRej, parallel } from "Wish"
+import Wish from "Wish"
 
 import Shroud from "shroud"
 
@@ -51,30 +51,30 @@ copyPackageToMadlibModules = ({ name, sanitizedUrl }) => Shroud.cover(
   "cp",
   [
     "-R",
-    `${Constants.MADLIB_MODULES_PATH}${name}`,
-    `${Constants.TEMPORARY_MODULES_PATH}${sanitizedUrl}/`,
+    mappend(Constants.MADLIB_MODULES_PATH, name),
+    mappend(Constants.TEMPORARY_MODULES_PATH, sanitizedUrl ++ "/"),
   ],
 )
 installNodeModules :: String -> Wish {} String
 installNodeModules = (pkgName) => pipe(
   mappend(Constants.MADLIB_MODULES_PATH),
   (path) => File.exists(`${path}package.json`) |> andDo(of(path)),
-  mapRej(K("")),
+  Wish.mapRej(K("")),
   map(List.append($, ["install"])),
   chain(
     pipe(
       Shroud.cover("npm", $),
-      mapRej(.stderr),
+      Wish.mapRej(.stderr),
     ),
   ),
   map(.stdout),
   map(IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`)),
-  discardError(IO.putLineAndPass(`No node modules to install for '${pkgName}'`)),
+  Wish.discardError(IO.putLineAndPass(`No node modules to install for '${pkgName}'`)),
 )(pkgName)
 initMadlibModulesFolder :: String -> a -> Wish String a
 initMadlibModulesFolder = (path, a) => pipe(
   Shroud.cover("mkdir"),
-  mapRej(.stderr),
+  Wish.mapRej(.stderr),
   andDo(of(a)),
 )(["-p", path])
 projectBaseUrl :: Dependency -> String
@@ -83,7 +83,7 @@ readMadlibDotJson :: Dependency -> Wish {} (Validate MadlibDotJson)
 readMadlibDotJson = (dependency) => pipe(
   MadlibDotJson.load,
   map(Valid),
-  discardError(
+  Wish.discardError(
     pipe(
       MadlibDotJsonCouldNotBeLoaded,
       ValidationError([], $, Nothing),
@@ -91,27 +91,31 @@ readMadlibDotJson = (dependency) => pipe(
   ),
 )(`${projectBaseUrl(dependency)}/madlib.json`)
 readVersionDotLock :: Dependency -> Wish {} (Validate (Maybe VersionDotLock))
-readVersionDotLock = (dependency) => pipe(
-  (d) => VersionDotLock.load(`${projectBaseUrl(d)}/version.lock`),
+readVersionDotLock = pipe(
+  projectBaseUrl,
+  mappend("/version.lock"),
+  VersionDotLock.load,
   map(
     pipe(
       Just,
       Valid,
     ),
   ),
-  discardError(K(NotValid([VersionDotLockMissing], Nothing))),
-)(dependency)
+  Wish.discardError(K(NotValid([VersionDotLockMissing], Nothing))),
+)
 computeBuildHash :: Dependency -> Wish {} (Validate String)
-computeBuildHash = (dependency) => pipe(
-  (d) => Shroud.cover("madlib", ["package", "generate-hash", "-i", projectBaseUrl(d)]),
+computeBuildHash = pipe(
+  projectBaseUrl,
+  List.append($, ["package", "generate-hash", "-i"]),
+  Shroud.cover("madlib"),
   map(
     pipe(
       .stdout,
       Valid,
     ),
   ),
-  discardError(K(NotValid([BuildHashCouldNotBeGenerated], ""))),
-)(dependency)
+  Wish.discardError(K(NotValid([BuildHashCouldNotBeGenerated], ""))),
+)
 prepareValidationInput :: Dependency -> Wish {} (Validate ValidationInput)
 prepareValidationInput = (dependency) => pipe(
   readVersionDotLock,
@@ -164,7 +168,7 @@ copyPackageFromTmp = (validationResult) => where(validationResult) {
         ),
         K(of(validationResult)),
       ),
-      discardError(
+      Wish.discardError(
         (commandError) => pipe(
           unsafeGetValidationValue,
           .madlibDotJson,
@@ -245,7 +249,7 @@ runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
     _ =>
       of({})
   },
-  mapRej(
+  Wish.mapRej(
     (result) => {
       IO.putLine(result.stdout)
       IO.putLine(result.stderr)
@@ -317,19 +321,17 @@ processDependencies = (context, dependencies) => pipe(
   filterAlreadyInstalledDependencies(context),
   pipe(
     map(downloadIfNotCached),
-    parallel,
+    Wish.parallel,
   ),
   map(
-    pipe(
-      List.mapMaybe(
-        where {
-          DownloadError(err) =>
-            IO.putLineAndPass(Color.red(err), Nothing)
+    List.mapMaybe(
+      where {
+        DownloadError(err) =>
+          IO.putLineAndPass(Color.red(err), Nothing)
 
-          Downloaded(a) =>
-            Just(a)
-        },
-      ),
+        Downloaded(a) =>
+          Just(a)
+      },
     ),
   ),
   chain(List.reduceM(processDependency, #[context, []])),
@@ -346,7 +348,7 @@ processDependencies = (context, dependencies) => pipe(
 installedDependencyFolders :: {} -> Wish {} (List String)
 installedDependencyFolders = () => pipe(
   Directory.read,
-  discardError(K([])),
+  Wish.discardError(K([])),
 )(Constants.MADLIB_MODULES_PATH)
 consumeAndInstallPackages = (context, madlibDotJson) => pipe(
   .dependencies,
@@ -356,7 +358,7 @@ consumeAndInstallPackages = (context, madlibDotJson) => pipe(
   chain(
     pipe(
       map(installNodeModules),
-      parallel,
+      Wish.parallel,
     ),
   ),
   chain(runPostInstallHook(true, madlibDotJson)),
@@ -364,13 +366,13 @@ consumeAndInstallPackages = (context, madlibDotJson) => pipe(
 installPackages :: Context -> String -> Wish {} (List String)
 installPackages = (context, madlibDotJsonPath) => pipe(
   File.read,
-  mapRej(K(Constants.MADLIB_NOT_FOUND)),
+  Wish.mapRej(K(Constants.MADLIB_NOT_FOUND)),
   chain(initMadlibModulesFolder(Constants.MADLIB_MODULES_PATH)),
-  discardError(I),
+  Wish.discardError(I),
   chain(
     pipe(
       MadlibDotJson.parse,
-      bichain(
+      Wish.bichain(
         pipe(
           IO.putLine,
           K(of([])),
@@ -389,32 +391,32 @@ prepare :: String -> Wish String String
 prepare = (packageDotJsonPath) => pipe(
   Shroud.cover("mkdir"),
   andDo(of(packageDotJsonPath)),
-  mapRej(.stderr),
+  Wish.mapRej(.stderr),
   chain(
     pipe(
       File.exists,
-      mapRej(K("")),
+      Wish.mapRej(K("")),
       map(K(packageDotJsonPath)),
     ),
   ),
   chain(
     (path) => pipe(
       Shroud.cover($, ["i"]),
-      mapRej(.stderr),
+      Wish.mapRej(.stderr),
       andDo(of(path)),
     )("npm"),
   ),
   chain(
     pipe(
       File.read,
-      mapRej(K("")),
+      Wish.mapRej(K("")),
     ),
   ),
 )(["-p", Constants.TEMPORARY_MODULES_PATH])
 restorePackageDotJson :: String -> Wish {} {}
 restorePackageDotJson = pipe(
   File.write("package.json"),
-  mapRej(K({})),
+  Wish.mapRej(K({})),
 )
 run :: {} -> Wish {} {}
 export run = () => {
@@ -422,16 +424,16 @@ export run = () => {
 
   return pipe(
     prepare,
-    bichain(
+    Wish.bichain(
       pipe(
         K("madlib.json"),
         installPackages(initialContext),
-        mapRej(IO.trace("it failed!")),
+        Wish.mapRej(IO.trace("it failed!")),
       ),
       (packageDotJsonContent) => pipe(
         installPackages(initialContext),
         chain((x) => restorePackageDotJson(packageDotJsonContent) |> andDo(of(x))),
-        chainRej((x) => restorePackageDotJson(packageDotJsonContent) |> andDo(bad(x))),
+        Wish.chainRej((x) => restorePackageDotJson(packageDotJsonContent) |> andDo(Wish.bad(x))),
       )("madlib.json"),
     ),
     andDo(of({})),

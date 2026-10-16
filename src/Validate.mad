@@ -8,7 +8,7 @@ import type { VersionRange } from "@/Version"
 import type { VersionDotLock } from "@/VersionDotLock"
 import type { Warning } from "@/Warning"
 
-import { always, equals, ifElse, not } from "Function"
+import Fn from "Function"
 import IO from "IO"
 import { Just, Nothing } from "Maybe"
 import { andDo } from "Monad"
@@ -18,7 +18,6 @@ import { findByName, updateEntry } from "@/Context"
 import { CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded } from "@/Error"
 import { intersection, withinRange } from "@/Version"
 import {
-  BuildHashCouldNotBeGenerated,
   InvalidBuildHash,
   InvalidVersionHash,
   OutOfRangeVersion,
@@ -27,6 +26,8 @@ import {
 
 
 
+K = Fn.always
+I = Fn.identity
 export alias ValidationInput = {
   computedBuildHash :: String,
   computedVersionHash :: String,
@@ -163,10 +164,10 @@ export combine = (a, b) => where(#[a, b]) {
     ValidationError(warningsA ++ warningsB, error, x)
 
   #[ValidationError(warnings, error, maybeA), Valid(v)] =>
-    ValidationError(warnings, error, map(always(v), maybeA))
+    ValidationError(warnings, error, map(K(v), maybeA))
 
   #[ValidationError(warningsA, error, maybeA), NotValid(warningsB, v)] =>
-    ValidationError(warningsA ++ warningsB, error, map(always(v), maybeA))
+    ValidationError(warningsA ++ warningsB, error, map(K(v), maybeA))
 
   #[ValidationError(warningsA, _, _), ValidationError(warningsB, error, m)] =>
     ValidationError(warningsA ++ warningsB, error, m)
@@ -280,7 +281,7 @@ buildValidationOutput = (context, madlibDotJson, dependency, rangeResult) => {
   validationOutput = {
     context: updateEntry(madlibDotJson.name, rangeOutput.versionInfo, context),
     shouldCopy: rangeOutput.shouldCopy,
-    dependency: { ...dependency, name: Just(madlibDotJson.name) },
+    dependency: { ...dependency, name: madlibDotJson.name },
     madlibDotJson,
   }
 
@@ -293,7 +294,7 @@ validateVersion = (context, dependency, validationInput) => {
 
   return pipe(
     intersection(dependency.versionRange),
-    ifElse(
+    Fn.ifElse(
       withinRange($, madlibDotJson.version),
       buildGoodRangeResult(madlibDotJson, versionInfo),
       buildBadRangeResult(madlibDotJson, versionInfo),
@@ -305,13 +306,10 @@ validateHashes :: ValidationInput -> Validate ValidationInput
 validateHashes = (validationInput) => {
   validatedBuildHash = where(validationInput.versionDotLock) {
     Just(versionDotLock) =>
-      ifElse(
-        pipe(
-          equals(validationInput.computedBuildHash),
-          not,
-        ),
-        always(NotValid([InvalidBuildHash], {})),
-        always(Valid({})),
+      Fn.ifElse(
+        Fn.complement(Fn.equals(validationInput.computedBuildHash)),
+        K(NotValid([InvalidBuildHash], {})),
+        K(Valid({})),
         versionDotLock.buildHash,
       )
 
@@ -321,13 +319,10 @@ validateHashes = (validationInput) => {
 
   validatedVersionHash = where(validationInput.versionDotLock) {
     Just(versionDotLock) =>
-      ifElse(
-        pipe(
-          equals(validationInput.computedVersionHash),
-          not,
-        ),
-        always(NotValid([InvalidVersionHash], {})),
-        always(Valid({})),
+      Fn.ifElse(
+        Fn.complement(Fn.equals(validationInput.computedVersionHash)),
+        K(NotValid([InvalidVersionHash], {})),
+        K(Valid({})),
         versionDotLock.versionHash,
       )
 
