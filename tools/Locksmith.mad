@@ -121,46 +121,66 @@ hashDir = pipe(
   map(.stdout),
   Wish.mapRej(.stderr),
 )
-runLocksmith :: LocksmithState -> Wish String String
-runLocksmith = ({ madlibDotJson, versionDotLock, cwd, setVersion }) => {
+alias GreasedLock = #[MadlibJson.MadlibDotJson, VersionLock.VersionDotLock]
+// serialize :: LocksmithState -> GreasedLock -> Wish String GreasedLock
+serialize = ({ madlibDotJson, versionDotLock, cwd }) => (filePair) => where(filePair) {
+  #[madJson, versionLock] =>
+    pipe(
+      rel(cwd),
+      File.write($, MadlibJson.write(madJson)),
+      Wish.mapRej(Fn.always("Unable to write madlib.json")),
+      chain(
+        (_) => pipe(
+          rel(cwd),
+          File.write($, VersionLock.write(versionLock)),
+          Wish.mapRej(Fn.always("Unable to write version.lock")),
+        )(versionDotLock),
+      ),
+      map(Fn.always(filePair)),
+    )(madlibDotJson)
+}
+// runLocksmith :: LocksmithState -> Wish String String
+runLocksmith = (conf) => {
+  { madlibDotJson, versionDotLock, cwd, setVersion } = conf
+  relative = rel(cwd)
+  madlibJson = pipe(
+    relative,
+    MadlibJson.load,
+    Wish.mapRej(Fn.always("BARF?")),
+  )(madlibDotJson)
+  versionJson = pipe(
+    relative,
+    VersionLock.load,
+  )(versionDotLock)
+  wishHash = hashDir(cwd)
   Log.env.config("smetversion", setVersion)
   version :: Maybe Version
   version = pipe(
     scan,
     Log.env.config("VERSION!"),
   )(setVersion ?? "")
-  return if (Maybe.isJust(version)) do {
-    relative = rel(cwd)
-    madlibJson = pipe(
-      relative,
-      MadlibJson.load,
-      Wish.mapRej(Fn.always("BARF?")),
-    )(madlibDotJson)
-    versionJson = pipe(
-      relative,
-      VersionLock.load,
-    )(versionDotLock)
-    wishHash = hashDir(cwd)
-    combiner = (buildHash, _madJson, _versionLock) => where(version) {
-      Just(_v) =>
-        do {
-          mj = { ..._madJson, version: _v }
-          vl = { ..._versionLock, buildHash }
-          return #[mj, vl]
-        }
+  return where(version) {
+    Just(_v) =>
+      pipe(
+        Wish.good,
+        ap($, wishHash),
+        ap($, madlibJson),
+        ap($, versionJson),
+        map(Log.env.locksmith("warp engine")),
+        map(Fn.always("Updated madlib.json and version.lock")),
+        // Wish.mapRej(Fn.always("Unable to do shit")),
+      )(
+        (_buildHash, _madJson, _versionLock) => serialize(
+          conf,
+          #[
+            { ..._madJson, version: Maybe.fromMaybe(Version.Version(0, 0, 0), version) },
+            { ..._versionLock, buildHash: _buildHash },
+          ],
+        ),
+      )
 
-      _ =>
-        #[_madJson, _versionLock]
-    }
-    return pipe(
-      ap($, wishHash),
-      ap($, madlibJson),
-      ap($, versionJson),
-      map(Log.env.locksmith("warp engine")),
-      map(Fn.always("good")),
-    )(Wish.good(combiner))
-  } else {
-    return Wish.bad("Version required!")
+    _ =>
+      Wish.bad("Version required!")
   }
 }
 main = (args) => {
