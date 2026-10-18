@@ -10,6 +10,11 @@
   },
   "dependencies": [
     {
+      "minVersion": "0.1.5",
+      "url": "https://github.com/brekk/ensign/archive/refs/tags/v0.1.5.zip",
+      "description": "ensign"
+    },
+    {
       "minVersion": "0.0.7",
       "url": "https://github.com/brekk/study/archive/refs/tags/v0.0.7.zip",
       "description": "Study"

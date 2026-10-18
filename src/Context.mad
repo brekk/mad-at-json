@@ -1,12 +1,13 @@
 import type { Maybe } from "Maybe"
 
-import type { Version, VersionRange } from "./Version"
+import type { Version, VersionRange } from "@model/Version"
 
 import Dict from "Dictionary"
 import { identity, ifElse, not } from "Function"
 import List from "List"
 import { Just, Nothing } from "Maybe"
 
+import Log from "@model/Log"
 import { AnyVersion } from "@model/Version"
 
 
@@ -29,6 +30,7 @@ export findByName = (name, context) => pipe(
     Nothing =>
       { version: Nothing, range: AnyVersion }
   },
+  Log.env.context("findByName (" ++ name ++ ")"),
 )(context)
 updateEntry :: String -> VersionInfo -> Context -> Context
 export updateEntry = (name, versionInfo, context) => pipe(
@@ -53,4 +55,5 @@ hasPackageBeenInstalled :: String -> Context -> Boolean
 export hasPackageBeenInstalled = (sanitizedUrl, context) => pipe(
   .installedPackages,
   List.includes(sanitizedUrl),
+  Log.env.context("hasPackageBeenInstalled " ++ sanitizedUrl),
 )(context)

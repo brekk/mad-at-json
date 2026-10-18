@@ -1,0 +1,196 @@
+import Either from "Either"
+import File from "File"
+import Path from "FilePath"
+import Fn from "Function"
+import Json from "Json"
+import List from "List"
+import Maybe from "Maybe"
+import { Just } from "Maybe"
+import Wish from "Wish"
+
+import Ensign from "ensign"
+import Declaration from "ensign/Declared"
+import Declared from "ensign/Declared/Flags"
+import EPrint from "ensign/Declared/Print"
+import Flags from "ensign/Flags"
+import Shroud from "shroud"
+
+import MadlibJson from "@model/Parse/MadlibJson"
+import VersionLock from "@model/Parse/VersionLock"
+import Version from "@model/Version"
+import Log from "@tools/LocksmithLog"
+
+
+
+export FLAGS = [
+  Declared.flagBoolean("help", ["h"], "This text you're reading!"),
+  Declared.flagBoolean("color", ["K"], "Control whether color is active"),
+  Declared.flagString(
+    "set-version",
+    ["version", "V"],
+    "The version you want to set your madlib.json to",
+  ),
+  Declared.flagString("cwd", ["c"], "Set the current working directory"),
+  Declared.flagString("madlib", ["m"], "Set the madlib.json path"),
+  Declared.flagString("version-lock", ["L"], "Set the version.lock path"),
+]
+alias LocksmithState = {
+  cwd :: String,
+  dryRun :: Boolean,
+  madlibDotJson :: String,
+  setVersion :: Maybe.Maybe String,
+  showHelp :: Boolean,
+  useColor :: Boolean,
+  versionDotLock :: String,
+}
+DEFAULT_STATE :: LocksmithState
+export DEFAULT_STATE = {
+  useColor: true,
+  cwd: ".",
+  madlibDotJson: "./madlib.json",
+  versionDotLock: "./version.lock",
+  showHelp: false,
+  setVersion: Maybe.Nothing,
+  dryRun: false,
+}
+processFlagState :: LocksmithState
+  -> (LocksmithState -> Flags.Flag -> #[Boolean, LocksmithState])
+  -> List Flags.Flag
+  -> LocksmithState
+processFlagState = (state, process, flags) => {
+  walker = (done, aggState, toProcess) => if (done) {
+    aggState
+  } else {
+    where(toProcess) {
+      [] =>
+        aggState
+
+      [a, ...z] =>
+        where(process(aggState, a)) {
+          #[stop, upState] =>
+            walker(stop, upState, z)
+        }
+    }
+  }
+  return walker(false, state, flags)
+}
+parseArgs = pipe(
+  Flags.parseFlags,
+  Declaration.validate(FLAGS),
+  Either.mapLeft(EPrint.printIssues),
+)
+captureTheFlag :: LocksmithState -> Flags.Flag -> #[Boolean, LocksmithState]
+captureTheFlag = (state, flag) => where(flag) {
+  Flags.Flag(k, v) =>
+    if (k == "cwd") {
+      #[false, { ...state, cwd: v }]
+    } else if (k == "madlib-dot-json") {
+      #[false, { ...state, madlibDotJson: v }]
+    } else if (k == "version-dot-lock") {
+      #[false, { ...state, versionDotLock: v }]
+    } else if (k == "set-version") {
+      #[false, { ...state, setVersion: Maybe.Just(v) }]
+    } else {
+      #[false, state]
+    }
+
+  Flags.FlagToggle(k, v) =>
+    if (k == "help") {
+      // exclusive / short-circuiting
+      #[true, { ...state, showHelp: v }]
+    } else if (k == "color") {
+      #[false, { ...state, useColor: v }]
+    } else {
+      #[false, state]
+    }
+
+  _ =>
+    #[false, state]
+}
+renderHelp = (useColor, flags) => {
+  fn = (useColor ? EPrint.printLegendWithColor : EPrint.printLegend)
+  return " pilcrow\na magic helper for madlib README files\n\n" ++ fn(flags)
+}
+rel = (cwd, x) => pipe(
+  List.append($, [cwd]),
+  Path.joinPath,
+)(x)
+hashDir = pipe(
+  List.append($, ["package", "generate-hash", "-i"]),
+  Shroud.cover("madlib"),
+  map(.stdout),
+  Wish.mapRej(.stderr),
+)
+runLocksmith :: LocksmithState -> Wish String String
+runLocksmith = ({ madlibDotJson, versionDotLock, cwd, setVersion }) => {
+  Log.env.config("smetversion", setVersion)
+  version :: Maybe Version
+  version = pipe(
+    scan,
+    Log.env.config("VERSION!"),
+  )(setVersion ?? "")
+  return if (Maybe.isJust(version)) do {
+    relative = rel(cwd)
+    madlibJson = pipe(
+      relative,
+      MadlibJson.load,
+      Wish.mapRej(Fn.always("BARF?")),
+    )(madlibDotJson)
+    versionJson = pipe(
+      relative,
+      VersionLock.load,
+    )(versionDotLock)
+    wishHash = hashDir(cwd)
+    combiner = (buildHash, _madJson, _versionLock) => where(version) {
+      Just(_v) =>
+        do {
+          mj = { ..._madJson, version: _v }
+          vl = { ..._versionLock, buildHash }
+          return #[mj, vl]
+        }
+
+      _ =>
+        #[_madJson, _versionLock]
+    }
+    return pipe(
+      ap($, wishHash),
+      ap($, madlibJson),
+      ap($, versionJson),
+      map(Log.env.locksmith("warp engine")),
+      map(Fn.always("good")),
+    )(Wish.good(combiner))
+  } else {
+    return Wish.bad("Version required!")
+  }
+}
+main = (args) => {
+  pipe(
+    List.drop(1),
+    Log.env.locksmith("args"),
+    parseArgs,
+    Log.env.locksmith("parsed"),
+    map(processFlagState(DEFAULT_STATE, captureTheFlag)),
+    Either.fromRight(DEFAULT_STATE),
+    Log.env.locksmith("processed"),
+    of,
+    chain(
+      Fn.ifElse(
+        .showHelp,
+        (x) => pipe(
+          renderHelp(x.useColor),
+          Wish.good,
+        )(FLAGS),
+        runLocksmith,
+      ),
+    ),
+    map(Log.env.locksmith("hooray")),
+    Wish.fulfill(
+      (bad) => {
+        Log.env.failure("out", bad)
+      },
+      (good) => {
+        Log.env.success("yes", good)
+      },
+    ),
+  )(args)
+}

@@ -10,6 +10,17 @@
       "version": "0.0.12",
       "versionHash": "c99de30e5c0b887bc1fe2f7bc115e5f0"
     },
+    "https://github.com/brekk/ensign/archive/refs/tags/v0.1.5.zip": {
+      "buildHash": "37d42f677b5a81ca6688273136b0fbfc",
+      "dependencies": [
+        "https://github.com/brekk/orthography/archive/refs/tags/v0.0.9.zip",
+        "https://github.com/brekk/study/archive/refs/tags/v0.0.7.zip",
+        "https://github.com/brekk/party-bus/archive/refs/tags/v0.3.1.zip"
+      ],
+      "name": "ensign",
+      "version": "0.1.5",
+      "versionHash": "45e7a75888af0c3ec5c00cb7c3cef6dd"
+    },
     "https://github.com/brekk/freitag/archive/refs/tags/v3.0.0.zip": {
       "buildHash": "22971a48255f259498ca5785abb77cca",
       "dependencies": [
@@ -19,6 +30,16 @@
       "name": "freitag",
       "version": "3.0.0",
       "versionHash": "51fcac2d9036ff81628df5d57425329b"
+    },
+    "https://github.com/brekk/orthography/archive/refs/tags/v0.0.9.zip": {
+      "buildHash": "3eb2d965f3016ad9ddc8f08258f28ae7",
+      "dependencies": [
+        "https://github.com/brekk/study/archive/refs/tags/v0.0.7.zip",
+        "https://github.com/brekk/party-bus/archive/refs/tags/v0.3.0.zip"
+      ],
+      "name": "orthography",
+      "version": "0.0.9",
+      "versionHash": "0fe62b963ce472b48dfecf0855803fec"
     },
     "https://github.com/brekk/party-bus/archive/refs/tags/v0.4.1.zip": {
       "buildHash": "1d27046384703e91885a74e9112bdd84",

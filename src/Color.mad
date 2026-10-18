@@ -2,6 +2,8 @@ import IO from "IO"
 import { Just, Nothing } from "Maybe"
 import Process from "Process"
 
+import Dye from "dye"
+
 
 
 IS_COLOR_ENABLED :: Boolean

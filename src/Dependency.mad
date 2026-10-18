@@ -35,9 +35,7 @@ export createWithRange = (description, name, url, minVer, maxVer) => createWithI
 create :: Maybe String -> String -> String -> Version -> Dependency
 export create = (d, n, u, min) => createWithImplicitRange(d, n, u, Just(min), Nothing)
 printDependency :: Dependency -> String
-export printDependency = ({ description, name, url, versionRange }) => `{
-  "description": ${description ?? ""},
-  "url": ${show(url)},
-  "name": ${show(name)},
-  ${Version.printRange(versionRange)}
-}`
+export printDependency = pipe(
+  toJson,
+  show,
+)
