@@ -5,6 +5,9 @@ import { Left, Right } from "Either"
 import File from "File"
 import { always } from "Function"
 import J from "Json/Parse"
+import P from "Json/Print"
+import List from "List"
+import Maybe from "Maybe"
 import { Just, Nothing } from "Maybe"
 import Wish from "Wish"
 import { bad, mapRej } from "Wish"
@@ -23,6 +26,48 @@ export alias MadlibDotJson = {
   main :: String,
   name :: String,
   version :: Version.Version,
+}
+SKIP_ME = "SKIP_ME"
+skippable = (a) => #[SKIP_ME, a]
+eschewSkippable = List.reduce(
+  (agg, x) => where(x) {
+    #[k, v] =>
+      k == SKIP_ME ? agg : List.append(x, agg)
+  },
+  [],
+)
+checkSkip = (encode, ww) => Maybe.isJust(ww) ? #["bin", encode(ww)] : skippable(P.string(SKIP_ME))
+dineDash = checkSkip(toJson)
+instance Json MadlibDotJson {
+  fromJson = J.map8(
+    (bin, dependencies, hooks, importAliases, madlibVersion, main, name, version) => (
+      { bin, dependencies, hooks, importAliases, madlibVersion, main, name, version }
+    ),
+    J.field("bin", J.maybe(J.string)),
+    J.field("dependencies", J.maybe(J.list(fromJson))),
+    J.field("hooks", J.maybe(J.dict(J.string))),
+    J.field("importAliases", J.maybe(J.dict(J.string))),
+    J.field("madlibVersion", J.maybe(J.string)),
+    J.field("main", J.string),
+    J.field("name", J.string),
+    J.field("version", fromJson),
+  )
+
+  toJson = (x) => {
+    return pipe(
+      eschewSkippable,
+      P.object,
+    )([
+      checkSkip((v) => P.string(v ?? SKIP_ME), x.bin),
+      dineDash(x.dependencies),
+      dineDash(x.hooks),
+      dineDash(x.importAliases),
+      checkSkip((v) => P.string(v ?? "0.0.0"), x.madlibVersion),
+      #["main", P.string(x.main)],
+      #["name", P.string(x.name)],
+      #["version", toJson(x.version)],
+    ])
+  }
 }
 makeMadlibDotJson :: String
   -> String
@@ -88,3 +133,8 @@ Error: `,
     ),
   ),
 )(path)
+export writeWithWidth = (width, jj) => pipe(
+  toJson,
+  P.printJson(width),
+)(jj)
+export write = writeWithWidth(80)

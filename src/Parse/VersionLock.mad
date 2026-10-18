@@ -3,7 +3,9 @@ import type { Wish } from "Wish"
 import { Left, Right } from "Either"
 import File from "File"
 import { always } from "Function"
+import {} from "Json"
 import J from "Json/Parse"
+import P from "Json/Print"
 import { bad, bichain, mapRej } from "Wish"
 
 
@@ -15,11 +17,32 @@ export alias PublicAPI = {
   apiNames :: Dictionary String String,
   apiTypes :: Dictionary String (List String),
 }
+instance Json PublicAPI {
+  fromJson = apiParser
+
+  toJson = ({ apiAliases, apiInstances, apiInterfaces, apiNames, apiTypes }) => P.object([
+    #["apiAliases", toJson(apiAliases)],
+    #["apiInstances", toJson(apiInstances)],
+    #["apiInterfaces", toJson(apiInterfaces)],
+    #["apiNames", toJson(apiNames)],
+    #["apiTypes", toJson(apiTypes)],
+  ])
+}
 export alias VersionDotLock = {
   buildHash :: String,
   jsApi :: PublicAPI,
   llvmApi :: PublicAPI,
   versionHash :: String,
+}
+instance Json VersionDotLock {
+  fromJson = parser
+
+  toJson = ({ buildHash, jsApi, llvmApi, versionHash }) => P.object([
+    #["buildHash", P.string(buildHash)],
+    #["jsApi", toJson(jsApi)],
+    #["llvmApi", toJson(llvmApi)],
+    #["versionHash", P.string(versionHash)],
+  ])
 }
 apiParser :: J.Parser PublicAPI
 apiParser = J.map5(
@@ -62,3 +85,8 @@ export load = (path) => pipe(
     ),
   ),
 )(path)
+export writeWithWidth = (width, jj) => pipe(
+  toJson,
+  P.printJson(width),
+)(jj)
+export write = writeWithWidth(80)
