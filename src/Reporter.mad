@@ -1,0 +1,284 @@
+import Dictionary from "Dictionary"
+import Float from "Float"
+import IO from "IO"
+import List from "List"
+import { fromMaybe } from "Maybe"
+import String from "String"
+import Terminal from "Terminal"
+
+import Color from "./Color"
+
+
+
+export alias Reporter = {
+  cached :: String -> {},
+  complete :: {} -> {},
+  downloadFinished :: String -> {},
+  downloaded :: String -> {},
+  downloading :: String -> {},
+  failed :: String -> {},
+  installed :: String -> {},
+  installing :: String -> {},
+  progress :: String -> Integer -> Integer -> {},
+  reportedWarning :: String -> {},
+  scheduled :: Integer -> {},
+  skipped :: String -> {},
+  start :: {} -> {},
+  validating :: String -> {},
+}
+line :: String -> {}
+line = IO.putLine
+colorCount :: (String -> String) -> Integer -> String
+colorCount = (colorFn, count) => count > 0 ? colorFn(show(count)) : show(count)
+statusLine :: Integer
+  -> Integer
+  -> Integer
+  -> Integer
+  -> Integer
+  -> Integer
+  -> Integer
+  -> Integer
+  -> String
+statusLine = (
+  total,
+  cached,
+  downloaded,
+  validating,
+  installing,
+  installed,
+  warnings,
+  failed
+) => `madlib packages  total ${show(total)}  cached ${show(cached)}  downloaded ${
+  show(downloaded)
+}  validating ${show(validating)}  installing ${show(installing)}  installed ${
+  colorCount(Color.green, installed)
+}  warnings ${colorCount(Color.yellow, warnings)}  failed ${colorCount(Color.red, failed)}`
+formatMessages :: (String -> String) -> List String -> String
+formatMessages = (colorFn, messages) => pipe(
+  List.reverse,
+  map((msg) => `  - ${colorFn(msg)}`),
+  String.unlines,
+)(messages)
+renderProgressBar :: String -> Integer -> Integer -> String
+renderProgressBar = (url, bytesNow, bytesTotal) => {
+  barWidth = 20
+  raw = bytesTotal > 0 ? Float.toInteger(bytesNow * barWidth / bytesTotal) : 0
+  filled = raw > barWidth - 1 ? barWidth - 1 : raw
+  bar = String.repeat('=', filled) ++ ">" ++ String.repeat(' ', barWidth - 1 - filled)
+  pct = bytesTotal > 0 ? Float.toInteger(bytesNow * 100 / bytesTotal) : 0
+  label = String.length(url) > 50 ? "..." ++ String.takeLast(47, url) : url
+  return `  ${label}  [${bar}] ${show(pct)}%`
+}
+make :: Boolean -> Integer -> Reporter
+export make = (tty, startedAt) => {
+  total = 0
+  cached = 0
+  downloaded = 0
+  validating = 0
+  installing = 0
+  installed = 0
+  skipped = 0
+  warnings = 0
+  failuresCount = 0
+  renderedLines = 0
+  failures :: List String
+  failures = []
+  warningMessages :: List String
+  warningMessages = []
+  activeDownloads :: List String
+  activeDownloads = []
+  progressBytes :: Dictionary String Integer
+  progressBytes = Dictionary.empty
+  progressTotal :: Dictionary String Integer
+  progressTotal = Dictionary.empty
+
+  render = () => if (tty) do {
+    if (renderedLines > 0) {
+      IO.put(Terminal.moveCursorUp(renderedLines))
+    }
+
+
+
+    /**/
+    IO.put(Terminal.clearToEndOfScreen({}))
+    IO.putLine(
+      statusLine(
+        total,
+        cached,
+        downloaded,
+        validating,
+        installing,
+        installed,
+        warnings,
+        failuresCount,
+      ),
+    )
+    List.forEach(
+      (url) => {
+        bytes = fromMaybe(0, Dictionary.get(url, progressBytes))
+        totl = fromMaybe(0, Dictionary.get(url, progressTotal))
+        IO.putLine(renderProgressBar(url, bytes, totl))
+      },
+      activeDownloads,
+    )
+    renderedLines := 1 + List.length(activeDownloads)
+  }
+
+  log = (message) => if (!tty) {
+    line(message)
+  }
+
+
+
+
+
+
+  start = () => {
+    if (tty) {
+      IO.put(Terminal.hideCursor({}))
+    } else {
+      line("Installing dependencies ...")
+    }
+    render({})
+  }
+
+  scheduled = (amount) => {
+    total := total + amount
+    render({})
+  }
+
+  finishDownload = (url) => {
+    activeDownloads := List.filter((u) => u != url, activeDownloads)
+    progressBytes := Dictionary.remove(url, progressBytes)
+    progressTotal := Dictionary.remove(url, progressTotal)
+  }
+
+  downloading = (url) => {
+    activeDownloads := [url, ...activeDownloads]
+    log(`downloading ${url}`)
+    render({})
+  }
+
+  markCached = (url) => {
+    finishDownload(url)
+    cached := cached + 1
+    log(`cached ${url}`)
+    render({})
+  }
+
+  markDownloaded = (url) => {
+    finishDownload(url)
+    downloaded := downloaded + 1
+    log(`downloaded ${url}`)
+    render({})
+  }
+
+  markDownloadFinished = (url) => {
+    finishDownload(url)
+    render({})
+  }
+
+  markValidating = (name) => {
+    validating := validating + 1
+    log(`validating ${name}`)
+    render({})
+  }
+
+  markInstalling = (name) => {
+    installing := installing + 1
+    log(`installing ${name}`)
+    render({})
+  }
+
+  markInstalled = (name) => {
+    installed := installed + 1
+    log(`installed ${name}`)
+    render({})
+  }
+
+  markSkipped = (name) => {
+    skipped := skipped + 1
+    log(`skipped ${name}`)
+    render({})
+  }
+
+  complete = () => do {
+    if (tty) {
+      IO.put(Terminal.showCursor({}))
+    }
+
+
+
+
+
+
+
+    elapsed = DateNow({}) - startedAt
+    line("")
+    line(Color.bold("Package install summary"))
+    line(`  total: ${show(total)}`)
+    line(`  installed: ${colorCount(Color.green, installed)}`)
+    line(`  reused from cache: ${show(cached)}`)
+    line(`  downloaded: ${show(downloaded)}`)
+    line(`  skipped: ${show(skipped)}`)
+    line(`  warnings: ${colorCount(Color.yellow, warnings)}`)
+    line(`  failures: ${colorCount(Color.red, failuresCount)}`)
+    line(`  elapsed: ${show(elapsed)}ms`)
+
+    if (warnings > 0) do {
+      line("")
+      line(Color.yellow("Warnings:"))
+      IO.put(formatMessages(Color.yellow, warningMessages))
+    }
+
+    if (failuresCount > 0) do {
+      line("")
+      line(Color.red("Failures:"))
+      IO.put(formatMessages(Color.red, failures))
+    }
+  }
+
+  reportedWarning = (message) => {
+    warnings := warnings + 1
+    warningMessages := [message, ...warningMessages]
+    log("warning: " ++ message)
+    render({})
+  }
+
+  failed = (message) => do {
+    failuresCount := failuresCount + 1
+    failures := [message, ...failures]
+    log("error: " ++ message)
+    render({})
+  }
+
+  trackProgress = (url, bytesNow, bytesTotal) => {
+    progressBytes := Dictionary.insert(url, bytesNow, progressBytes)
+    progressTotal := Dictionary.insert(url, bytesTotal, progressTotal)
+    render({})
+  }
+
+  return {
+    start: start,
+    scheduled: scheduled,
+    downloading: downloading,
+    cached: markCached,
+    downloaded: markDownloaded,
+    downloadFinished: markDownloadFinished,
+    validating: markValidating,
+    installing: markInstalling,
+    installed: markInstalled,
+    skipped: markSkipped,
+    reportedWarning: reportedWarning,
+    failed: failed,
+    progress: trackProgress,
+    complete: complete,
+  }
+}
+#iftarget llvm
+DateNow :: {} -> Integer
+DateNow = extern "madlib__date__now"
+#elseif js
+DateNow :: {} -> Integer
+DateNow = extern "Date.now"
+#endif

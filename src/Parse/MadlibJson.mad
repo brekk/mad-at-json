@@ -44,7 +44,7 @@ instance Json MadlibDotJson {
       { bin, dependencies, hooks, importAliases, madlibVersion, main, name, version }
     ),
     J.field("bin", J.maybe(J.string)),
-    J.field("dependencies", J.maybe(J.list(fromJson))),
+    Parsed.dependenciesParser,
     J.field("hooks", J.maybe(J.dict(J.string))),
     J.field("importAliases", J.maybe(J.dict(J.string))),
     J.field("madlibVersion", J.maybe(J.string)),
@@ -104,7 +104,7 @@ parser = J.chain8(
   J.field("name", J.string),
   J.field("version", J.string),
   J.maybe(J.field("madlibVersion", J.string)),
-  J.maybe(Parsed.dependenciesParser),
+  Parsed.dependenciesParser,
   J.field("main", J.string),
   J.maybe(J.field("bin", J.string)),
   J.maybe(J.field("importAliases", J.dict(J.string))),

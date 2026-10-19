@@ -1,17 +1,30 @@
-import Study from "Study"
+import String from "String"
+import { assertEquals, test } from "Test"
 
-import Url from "@/URL"
+import { sanitizeUrl } from "./URL"
 
 
 
-Study.report(
-  Url.sanitizeUrl,
+test(
   "sanitizeUrl",
-  [
-    #[
-      "https://whatever.biz#heyheyhey?science=cool&bizness=really-cool",
-      "https___whatever_biz_heyheyhey_science_cool_bizness_really_cool",
-    ],
-    #["", ""],
-  ],
+  (_) => assertEquals(String.startsWith("u_", sanitizeUrl("https://url.tld")), true),
+)
+test(
+  "sanitizeUrl - #",
+  (_) => assertEquals(String.startsWith("u_", sanitizeUrl("https://url.tld#anchor")), true),
+)
+test(
+  "sanitizeUrl - ? and =",
+  (_) => assertEquals(String.startsWith("u_", sanitizeUrl("https://url.tld?param=value")), true),
+)
+test(
+  "sanitizeUrl - -",
+  (_) => assertEquals(String.startsWith("u_", sanitizeUrl("https://dom-ain.tld")), true),
+)
+test(
+  "sanitizeUrl - distinct urls do not collide",
+  (_) => assertEquals(
+    sanitizeUrl("https://dom-ain.tld") == sanitizeUrl("https://dom_ain.tld"),
+    false,
+  ),
 )

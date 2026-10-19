@@ -57,5 +57,5 @@ export dependencyParser = J.map5(
   versionField("maxVersion"),
   J.field("name", J.string),
 )
-dependenciesParser :: J.Parser (List Dependency)
-export dependenciesParser = J.field("dependencies", J.list(dependencyParser))
+dependenciesParser :: J.Parser (Maybe (List Dependency))
+export dependenciesParser = J.field("dependencies", J.maybe(J.list(dependencyParser)))

@@ -1,0 +1,124 @@
+import type { MadlibDotJson } from "./MadlibDotJson"
+import type { LockEntry } from "./MadlibLock"
+import type { MadlibLock } from "./MadlibLock"
+
+import Dictionary from "Dictionary"
+import IO from "IO"
+import List from "List"
+import { Just, Nothing, fromMaybe } from "Maybe"
+import String from "String"
+
+import Color from "./Color"
+import Version from "./Version"
+
+
+
+// Build name -> list-of-distinct-versions from all lock entries
+addVersionOccurrence :: LockEntry
+  -> Dictionary String (List String)
+  -> Dictionary String (List String)
+addVersionOccurrence = (entry, acc) => Dictionary.insert(
+  entry.name,
+  pipe(
+    Dictionary.get(entry.name),
+    fromMaybe([]),
+    (versions) => List.includes(entry.version, versions) ? versions : [...versions, entry.version],
+  )(acc),
+  acc,
+)
+buildVersionMap :: Dictionary String LockEntry -> Dictionary String (List String)
+export buildVersionMap = (packages) => Dictionary.reduce(
+  (_, entry, acc) => addVersionOccurrence(entry, acc),
+  Dictionary.empty,
+  packages,
+)
+findConflictedNames :: Dictionary String LockEntry -> List String
+export findConflictedNames = (packages) => pipe(
+  buildVersionMap,
+  Dictionary.toList,
+  List.filter(where { #[_, versions] => List.length(versions) > 1 }),
+  map(where { #[name, _] => name }),
+)(packages)
+// Find all URL-paths from rootUrls to any package matching both name and version.
+findPathsToVersion :: String
+  -> String
+  -> Dictionary String LockEntry
+  -> List String
+  -> List String
+  -> List (List String)
+export findPathsToVersion = (
+  targetName,
+  targetVersion,
+  packages,
+  currentPath,
+  urlsToSearch
+) => pipe(
+  map(
+    (url) => where(Dictionary.get(url, packages)) {
+      Nothing =>
+        []
+
+      Just(entry) =>
+        entry.name == targetName && entry.version == targetVersion
+          ? [[...currentPath, url]]
+          : List.includes(url, currentPath)
+            ? []
+            : findPathsToVersion(
+              targetName,
+              targetVersion,
+              packages,
+              [...currentPath, url],
+              entry.dependencies,
+            )
+    },
+  ),
+  List.flatten,
+)(urlsToSearch)
+urlToLabel :: Dictionary String LockEntry -> String -> String
+urlToLabel = (packages, url) => where(Dictionary.get(url, packages)) {
+  Just(entry) =>
+    `${Color.bold(entry.name)}@${entry.version}`
+
+  Nothing =>
+    Color.yellow(url)
+}
+pathToChainString :: Dictionary String LockEntry -> String -> List String -> String
+export pathToChainString = (packages, rootLabel, urlPath) => pipe(
+  map(urlToLabel(packages)),
+  (segments) => [rootLabel, ...segments],
+  String.join(" → "),
+)(urlPath)
+printVersionPaths :: String -> String -> Dictionary String LockEntry -> List String -> String -> {}
+printVersionPaths = (conflictedName, rootLabel, packages, rootDeps, version) => {
+  paths = findPathsToVersion(conflictedName, version, packages, [], rootDeps)
+  IO.putLine(`  ${Color.yellow(version)}:`)
+  List.forEach((path) => IO.putLine(`    ${pathToChainString(packages, rootLabel, path)}`), paths)
+}
+printConflict :: String -> Dictionary String LockEntry -> List String -> String -> {}
+printConflict = (rootLabel, packages, rootDeps, conflictedName) => {
+  versions = fromMaybe([], Dictionary.get(conflictedName, buildVersionMap(packages)))
+  IO.putLine(`  ${Color.bold(conflictedName)} (${show(List.length(versions))} versions in use):`)
+  List.forEach(printVersionPaths(conflictedName, rootLabel, packages, rootDeps), versions)
+}
+printAllConflicts :: String -> Dictionary String LockEntry -> List String -> List String -> {}
+printAllConflicts = (rootLabel, packages, rootDeps, conflictedNames) => {
+  IO.putLine("")
+  IO.putLine(Color.bold(Color.red("Dependency conflicts detected:")))
+  IO.putLine("")
+  List.forEach(printConflict(rootLabel, packages, rootDeps), conflictedNames)
+  IO.putLine("")
+}
+analyze :: MadlibDotJson -> MadlibLock -> {}
+export analyze = (mdj, lock) => {
+  rootLabel = `${Color.bold(mdj.name)}@${Version.showVersion(mdj.version)}`
+  rootDeps = pipe(
+    fromMaybe([]),
+    map(.url),
+  )(mdj.dependencies)
+  packages = lock.packages
+  conflictedNames = findConflictedNames(packages)
+
+  return List.length(conflictedNames) > 0
+    ? printAllConflicts(rootLabel, packages, rootDeps, conflictedNames)
+    : {}
+}

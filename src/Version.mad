@@ -9,12 +9,11 @@ import JV from "Json/Value"
 import {} from "List"
 import { Just, Nothing } from "Maybe"
 import {} from "Scan"
-import String from "String"
+import { split } from "String"
 
 
 
 export type Version = Version(Integer, Integer, Integer)
-derive Comparable Version
 instance Json Version {
   fromJson = parseJsonVersion
 
@@ -37,6 +36,7 @@ parseJsonVersion = chain(
   ),
   J.string,
 )
+derive Comparable Version
 export type VersionRange
   = VersionRange(Version, Version)
   | FromVersion(Version)
@@ -57,26 +57,14 @@ export bump = (k, v) => where(#[k, v]) {
 export bumpMajor = bump(Major)
 export bumpMinor = bump(Minor)
 export bumpPatch = bump(Patch)
-major :: Version -> Integer
-export major = where {
-  Version(x, _, _) =>
-    x
-}
-minor :: Version -> Integer
-export minor = where {
-  Version(_, x, _) =>
-    x
-}
-patch :: Version -> Integer
-export patch = where {
-  Version(_, _, x) =>
-    x
-}
 showVersion :: Version -> String
-export showVersion = (version) => pipe(
-  map(show),
-  String.join("."),
-)([major(version), minor(version), patch(version)])
+export showVersion = (version) => {
+  major = show(getMajor(version))
+  minor = show(getMinor(version))
+  patch = show(getPatch(version))
+
+  return `${major}.${minor}.${patch}`
+}
 instance Scan Version {
   scan = parse
 }
@@ -91,23 +79,38 @@ export createRange = (maybeMin, maybeMax) => where(#[maybeMin, maybeMax]) {
   #[Nothing, Just(maxVersion)] =>
     UntilVersion(maxVersion)
 
-  _ =>
+  #[Nothing, Nothing] =>
     AnyVersion
+}
+getMajor :: Version -> Integer
+export getMajor = where {
+  Version(major, _, _) =>
+    major
+}
+getMinor :: Version -> Integer
+export getMinor = where {
+  Version(_, minor, _) =>
+    minor
+}
+getPatch :: Version -> Integer
+export getPatch = where {
+  Version(_, _, patch) =>
+    patch
 }
 parse :: String -> Maybe Version
 export parse = pipe(
-  String.split("."),
+  split("."),
   map(scan),
   where {
-    [Just(m), Just(n), Just(p)] =>
-      Just(Version(m, n, p))
+    [Just(major), Just(minor), Just(patch)] =>
+      Just(Version(major, minor, patch))
 
     _ =>
       Nothing
   },
 )
-withinRange :: VersionRange -> Version -> Boolean
-export withinRange = (range, version) => where(range) {
+isInRange :: Version -> VersionRange -> Boolean
+export isInRange = (version, range) => where(range) {
   FromVersion(start) =>
     ge(version, start)
 
@@ -124,8 +127,8 @@ max :: Version -> Version -> Version
 export max = (v1, v2) => ge(v1, v2) ? v1 : v2
 min :: Version -> Version -> Version
 export min = (v1, v2) => le(v1, v2) ? v1 : v2
-intersection :: VersionRange -> VersionRange -> VersionRange
-export intersection = (range1, range2) => where(#[range1, range2]) {
+intersectRanges :: VersionRange -> VersionRange -> VersionRange
+export intersectRanges = (range1, range2) => where(#[range1, range2]) {
   #[FromVersion(start1), FromVersion(start2)] =>
     FromVersion(max(start1, start2))
 

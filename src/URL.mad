@@ -1,35 +1,6 @@
-import String from "String"
+import { hashString } from "./Hash"
 
 
 
-slugChar :: Char -> Char
-slugChar = where {
-  ':' =>
-    '_'
-
-  '/' =>
-    '_'
-
-  '#' =>
-    '_'
-
-  '.' =>
-    '_'
-
-  '?' =>
-    '_'
-
-  '&' =>
-    '_'
-
-  '=' =>
-    '_'
-
-  '-' =>
-    '_'
-
-  char =>
-    char
-}
 sanitizeUrl :: String -> String
-export sanitizeUrl = String.mapChars(slugChar)
+export sanitizeUrl = (url) => `u_${hashString(url)}`

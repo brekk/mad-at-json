@@ -1,8 +1,7 @@
 import IO from "IO"
 import { Just, Nothing } from "Maybe"
 import Process from "Process"
-
-import Dye from "dye"
+import Term from "Terminal"
 
 
 
@@ -16,6 +15,7 @@ export safeColor = boundColor(IS_COLOR_ENABLED)
 export red = safeColor(IO.red)
 export yellow = safeColor(IO.yellow)
 export green = safeColor(IO.green)
+export bold = safeColor(Term.text.bold)
 tabbedColorPrint = (fn, msg) => "  - " ++ fn(msg)
 cprint = (fn, msg, a) => IO.putLineAndPass(tabbedColorPrint(fn, msg), a)
 export tabYellow = cprint(yellow)

@@ -140,19 +140,21 @@ serialize = ({ madlibDotJson, versionDotLock, cwd }) => (filePair) => where(file
     )(madlibDotJson)
 }
 // runLocksmith :: LocksmithState -> Wish String String
-runLocksmith = (conf) => {
+runLocksmith = (conf) => do {
   { madlibDotJson, versionDotLock, cwd, setVersion } = conf
   relative = rel(cwd)
-  madlibJson = pipe(
+  madlibJson <- pipe(
     relative,
     MadlibJson.load,
+    map(Log.env.config("madlib.json")),
     Wish.mapRej(Fn.always("BARF?")),
   )(madlibDotJson)
-  versionJson = pipe(
+  versionJson <- pipe(
     relative,
     VersionLock.load,
+    map(Log.env.config("version.lock")),
   )(versionDotLock)
-  wishHash = hashDir(cwd)
+  buildHash <- hashDir(cwd)
   Log.env.config("smetversion", setVersion)
   version :: Maybe Version
   version = pipe(
@@ -162,19 +164,15 @@ runLocksmith = (conf) => {
   return where(version) {
     Just(_v) =>
       pipe(
-        Wish.good,
-        ap($, wishHash),
-        ap($, madlibJson),
-        ap($, versionJson),
         map(Log.env.locksmith("warp engine")),
         map(Fn.always("Updated madlib.json and version.lock")),
         // Wish.mapRej(Fn.always("Unable to do shit")),
       )(
-        (_buildHash, _madJson, _versionLock) => serialize(
+        serialize(
           conf,
           #[
-            { ..._madJson, version: Maybe.fromMaybe(Version.Version(0, 0, 0), version) },
-            { ..._versionLock, buildHash: _buildHash },
+            { ...madlibJson, version: Maybe.fromMaybe(Version.Version(0, 0, 0), version) },
+            { ...versionJson, buildHash },
           ],
         ),
       )

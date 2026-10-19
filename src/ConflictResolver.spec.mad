@@ -1,0 +1,294 @@
+import type { Config } from "./Config"
+
+import ByteArray from "ByteArray"
+import Dictionary from "Dictionary"
+import { always } from "Function"
+import { OK } from "Http"
+import List from "List"
+import { Just } from "Maybe"
+import String from "String"
+import { ErrorWithMessage, assertEquals, test } from "Test"
+import { bad, bichain, good, mapRej } from "Wish"
+
+import { pruneConflict, versionChoices } from "./ConflictResolver"
+import ConflictResolver from "./ConflictResolver"
+import { Exact, LatestPatch } from "./MadlibLock"
+import { AnyVersion, Version } from "./Version"
+
+
+
+// ---- Fixtures ----------------------------------------------------------------
+
+PACKAGES = Dictionary.fromList([
+  #[
+    "https://example.com/foo-v1.zip",
+    { name: "foo", version: "1.0.0", buildHash: "aaa", versionHash: "bbb", dependencies: [] },
+  ],
+  #[
+    "https://example.com/foo-v2.zip",
+    { name: "foo", version: "2.0.0", buildHash: "ccc", versionHash: "ddd", dependencies: [] },
+  ],
+  #[
+    "https://example.com/bar.zip",
+    { name: "bar", version: "3.0.0", buildHash: "eee", versionHash: "fff", dependencies: [] },
+  ],
+])
+baseConfig :: Config
+baseConfig = {
+  readFile: (_) => good(""),
+  writeFile: (_, _) => good({}),
+  writeBytes: (_, _) => good({}),
+  readDir: (_) => good([]),
+  createDir: (_, _) => good({}),
+  remove: (_, _) => good({}),
+  copy: (_, _, _) => good({}),
+  rename: (_, _) => good({}),
+  unzip: (_, _) => good({}),
+  exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
+  exists: (_) => good(true),
+  getBytes: (_) => good({ headers: [], status: OK, body: ByteArray.empty() }),
+  getBytesWithProgress: (_, _) => good({ headers: [], status: OK, body: ByteArray.empty() }),
+  isTTY: (_) => false,
+  now: (_) => 0,
+}
+DEFAULT_OPTIONS = { interactive: false, overrides: [] }
+// ---- versionChoices ----------------------------------------------------------
+
+test(
+  "versionChoices - returns one choice per distinct version",
+  (_) => assertEquals(List.length(versionChoices("foo", PACKAGES)), 2),
+)
+test(
+  "versionChoices - deduplicates same version from multiple URLs",
+  (_) => {
+    duped = Dictionary.fromList([
+      #[
+        "https://example.com/baz-a.zip",
+        { name: "baz", version: "1.0.0", buildHash: "", versionHash: "", dependencies: [] },
+      ],
+      #[
+        "https://example.com/baz-b.zip",
+        { name: "baz", version: "1.0.0", buildHash: "", versionHash: "", dependencies: [] },
+      ],
+    ])
+    return assertEquals(List.length(versionChoices("baz", duped)), 1)
+  },
+)
+test(
+  "versionChoices - empty result for unknown package name",
+  (_) => assertEquals(versionChoices("nonexistent", PACKAGES), []),
+)
+test(
+  "versionChoices - only includes choices for the requested name",
+  (_) => {
+    barChoices = versionChoices("bar", PACKAGES)
+    fooChoices = versionChoices("foo", PACKAGES)
+    return assertEquals(List.length(barChoices) == 1 && List.length(fooChoices) == 2, true)
+  },
+)
+// ---- pruneConflict -----------------------------------------------------------
+
+test(
+  "pruneConflict - keeps only the chosen URL for the conflicted name",
+  (_) => {
+    result = pruneConflict("foo", "https://example.com/foo-v2.zip", PACKAGES)
+    return assertEquals(Dictionary.includes("https://example.com/foo-v1.zip", result), false)
+  },
+)
+test(
+  "pruneConflict - chosen URL remains in the result",
+  (_) => {
+    result = pruneConflict("foo", "https://example.com/foo-v2.zip", PACKAGES)
+    return assertEquals(Dictionary.includes("https://example.com/foo-v2.zip", result), true)
+  },
+)
+test(
+  "pruneConflict - unrelated packages are untouched",
+  (_) => {
+    result = pruneConflict("foo", "https://example.com/foo-v1.zip", PACKAGES)
+    return assertEquals(Dictionary.includes("https://example.com/bar.zip", result), true)
+  },
+)
+test(
+  "pruneConflict - result size is original minus non-chosen conflicted entries",
+  (_) => {
+    // foo has 2 entries; we keep 1; bar stays → total 2
+    result = pruneConflict("foo", "https://example.com/foo-v1.zip", PACKAGES)
+    return assertEquals(Dictionary.length(result), 2)
+  },
+)
+test(
+  "pruneConflict - no-op when conflictedName has a single entry",
+  (_) => {
+    result = pruneConflict("bar", "https://example.com/bar.zip", PACKAGES)
+    return assertEquals(Dictionary.length(result), Dictionary.length(PACKAGES))
+  },
+)
+// ---- run (non-TTY path) ------------------------------------------------------
+
+FOO_LOCK = { lockfileVersion: 1, resolutions: Dictionary.empty, packages: PACKAGES }
+FOO_DEP = {
+  url: "https://example.com/foo-v2.zip",
+  sanitizedUrl: "https___example_com_foo-v2_zip",
+  description: Just("foo"),
+  versionRange: AnyVersion,
+  name: Just("foo"),
+}
+FOO_MADLIB_JSON = {
+  name: "my-app",
+  version: Version(1, 0, 0),
+  madlibVersion: Just("0.26.0"),
+  main: "src/Main.mad",
+  bin: Just("dist/main"),
+  importAliases: Just(Dictionary.empty),
+  dependencies: Just([FOO_DEP]),
+  hooks: Just(Dictionary.empty),
+}
+test(
+  "run - non-TTY returns original lock when no conflicts",
+  (_) => {
+    singlePackage = Dictionary.fromList([
+      #[
+        "https://example.com/bar.zip",
+        { name: "bar", version: "3.0.0", buildHash: "eee", versionHash: "fff", dependencies: [] },
+      ],
+    ])
+    noConflictLock = { lockfileVersion: 1, resolutions: Dictionary.empty, packages: singlePackage }
+    return pipe(
+      mapRej(always(ErrorWithMessage("run failed"))),
+      chain((lock) => assertEquals(Dictionary.length(lock.packages), 1)),
+    )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, noConflictLock))
+  },
+)
+test(
+  "run - non-TTY with conflicts fails with an error",
+  (_) => pipe(
+    bichain(
+      (_) => good({}),
+      (_) => bad(ErrorWithMessage("expected run to fail for non-TTY with conflicts")),
+    ),
+  )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, FOO_LOCK)),
+)
+test(
+  "run - non-TTY with conflicts error message mentions conflicts",
+  (_) => pipe(
+    bichain(
+      (msg) => assertEquals(String.contains("conflict", String.toLower(msg)), true),
+      (_) => bad(ErrorWithMessage("expected run to fail for non-TTY with conflicts")),
+    ),
+  )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, FOO_LOCK)),
+)
+// ---- persistent policy ------------------------------------------------------
+
+PATCH_V3_URL = "https://example.com/patch-v3.zip"
+PATCH_V6_URL = "https://example.com/patch-v6.zip"
+PATCH_PACKAGES = Dictionary.fromList([
+  #[
+    PATCH_V3_URL,
+    { name: "patchy", version: "1.2.3", buildHash: "a", versionHash: "b", dependencies: [] },
+  ],
+  #[
+    PATCH_V6_URL,
+    { name: "patchy", version: "1.2.6", buildHash: "c", versionHash: "d", dependencies: [] },
+  ],
+])
+PATCH_LOCK = { lockfileVersion: 2, resolutions: Dictionary.empty, packages: PATCH_PACKAGES }
+test(
+  "run - automatically selects the highest patch on first install",
+  (_) => pipe(
+    mapRej(always(ErrorWithMessage("patch resolution failed"))),
+    chain(
+      (lock) => assertEquals(
+        Dictionary.get("patchy", lock.resolutions),
+        Just({ strategy: LatestPatch, version: "1.2.6", url: PATCH_V6_URL }),
+      ),
+    ),
+  )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, PATCH_LOCK)),
+)
+test(
+  "run - explicit selection overrides automatic latest patch",
+  (_) => pipe(
+    mapRej(always(ErrorWithMessage("explicit resolution failed"))),
+    chain(
+      (lock) => assertEquals(
+        Dictionary.get("patchy", lock.resolutions),
+        Just({ strategy: Exact, version: "1.2.3", url: PATCH_V3_URL }),
+      ),
+    ),
+  )(
+    ConflictResolver.run(
+      baseConfig,
+      { interactive: false, overrides: [{ name: "patchy", version: "1.2.3" }] },
+      FOO_MADLIB_JSON,
+      PATCH_LOCK,
+    ),
+  ),
+)
+test(
+  "run - saved exact selection remains sticky",
+  (_) => {
+    pinned = {
+      ...PATCH_LOCK,
+      resolutions: Dictionary.fromList([
+        #["patchy", { strategy: Exact, version: "1.2.3", url: PATCH_V3_URL }],
+      ]),
+    }
+    return pipe(
+      mapRej(always(ErrorWithMessage("saved exact resolution failed"))),
+      chain((lock) => assertEquals(Dictionary.includes(PATCH_V6_URL, lock.packages), false)),
+    )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, pinned))
+  },
+)
+test(
+  "run - latestPatch resolution advances when a newer patch appears",
+  (_) => {
+    previous = {
+      ...PATCH_LOCK,
+      resolutions: Dictionary.fromList([
+        #["patchy", { strategy: LatestPatch, version: "1.2.3", url: PATCH_V3_URL }],
+      ]),
+    }
+    return pipe(
+      mapRej(always(ErrorWithMessage("latest patch did not advance"))),
+      chain(
+        (lock) => assertEquals(
+          Dictionary.get("patchy", lock.resolutions),
+          Just({ strategy: LatestPatch, version: "1.2.6", url: PATCH_V6_URL }),
+        ),
+      ),
+    )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, previous))
+  },
+)
+test(
+  "run - stale exact selection fails instead of silently changing versions",
+  (_) => {
+    stale = {
+      ...FOO_LOCK,
+      resolutions: Dictionary.fromList([
+        #["foo", { strategy: Exact, version: "9.0.0", url: "https://example.com/gone.zip" }],
+      ]),
+    }
+    return pipe(
+      bichain(
+        (message) => assertEquals(String.contains("stale", String.toLower(message)), true),
+        (_) => bad(ErrorWithMessage("expected stale resolution to fail")),
+      ),
+    )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, stale))
+  },
+)
+test(
+  "run - interactive mode requires an actual TTY",
+  (_) => pipe(
+    bichain(
+      (message) => assertEquals(String.contains("TTY", message), true),
+      (_) => bad(ErrorWithMessage("expected interactive non-TTY run to fail")),
+    ),
+  )(
+    ConflictResolver.run(
+      baseConfig,
+      { interactive: true, overrides: [] },
+      FOO_MADLIB_JSON,
+      FOO_LOCK,
+    ),
+  ),
+)

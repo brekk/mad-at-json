@@ -1,0 +1,55 @@
+import type { Error, Response } from "Http"
+import type { CommandOptions, CommandResult } from "Process"
+import type { Wish } from "Wish"
+
+import Archive from "Archive"
+import Date from "Date"
+import Directory from "Directory"
+import File from "File"
+import { getBytes, getBytesWithProgress } from "Http"
+import IO from "IO"
+import { exec } from "Process"
+import Terminal from "Terminal"
+
+
+
+export alias Config = {
+  copy :: String -> String -> Directory.CopyOptions -> Wish IO.Error {},
+  createDir :: String -> Directory.CreateOptions -> Wish IO.Error {},
+  exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult,
+  exists :: String -> Wish {} Boolean,
+  getBytes :: String -> Wish (Error ByteArray) (Response ByteArray),
+  getBytesWithProgress :: String
+    -> (Integer -> Integer -> {})
+    -> Wish (Error ByteArray) (Response ByteArray),
+  isTTY :: {} -> Boolean,
+  now :: {} -> Integer,
+  readDir :: String -> Wish IO.Error (List String),
+  readFile :: String -> Wish IO.Error String,
+  remove :: String -> Directory.RemoveOptions -> Wish IO.Error {},
+  rename :: String -> String -> Wish IO.Error {},
+  unzip :: String -> String -> Wish IO.Error {},
+  writeBytes :: String -> ByteArray -> Wish IO.Error {},
+  writeFile :: String -> String -> Wish IO.Error {},
+}
+defaultConfig :: Config
+export defaultConfig = {
+  readFile: File.read,
+  writeFile: File.write,
+  writeBytes: File.writeBytes,
+  readDir: Directory.read,
+  createDir: Directory.create,
+  remove: Directory.remove,
+  copy: Directory.copy,
+  rename: Directory.rename,
+  unzip: Archive.unzip,
+  exec,
+  exists: File.exists,
+  getBytes,
+  getBytesWithProgress,
+  isTTY: Terminal.isTTY,
+  now: pipe(
+    Date.now,
+    Date.getTimestamp,
+  ),
+}
