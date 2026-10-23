@@ -27,9 +27,9 @@ import { bad, bichain, chainRej, discardError, good, mapRej, parallelN } from "W
 import ConflictResolver from "./ConflictResolver"
 import Constants from "./Constants"
 import { addInstalledPackage, addLockEntry, hasPackageBeenInstalled } from "./Context"
+import Dependency from "./Dependency"
 import { DownloadError, Downloaded, downloadIfNotCached } from "./Download"
 import { FromCache, FromRemote, downloadErrorMessage } from "./Download"
-import { hashVersion } from "./Hash"
 import MadlibDotJson from "./MadlibDotJson"
 import MadlibLock from "./MadlibLock"
 import Reporter from "./Reporter"
@@ -52,22 +52,35 @@ import VersionDotLock from "./VersionDotLock"
 
 
 
+madpathFolder = pipe(
+  mappend(Constants.MADLIB_MODULES_PATH),
+  mappend($, "/"),
+)
 installNodeModules :: Config -> String -> Wish String String
 installNodeModules = (config, pkgName) => {
-  path = `${Constants.MADLIB_MODULES_PATH}${pkgName}/`
-  return bichain(
-    always(of("")),
-    (_) => pipe(
-      mapRej(.stderr),
-      map(.stdout),
-      map(IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`)),
-    )(config.exec("npm", ["install", path], Process.DEFAULT_COMMAND_OPTIONS)),
-  )(config.exists(`${path}package.json`))
+  path = madpathFolder(pkgName)
+  return pipe(
+    mappend($, "package.json"),
+    config.exists,
+    bichain(
+      always(of("")),
+      (_) => pipe(
+        mapRej(.stderr),
+        map(.stdout),
+        map(IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`)),
+      )(config.exec("npm", ["install", path], Process.DEFAULT_COMMAND_OPTIONS)),
+    ),
+  )(path)
 }
 projectBaseUrl :: Dependency -> String
-projectBaseUrl = (dependency) => `${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}`
+projectBaseUrl = pipe(
+  .sanitizedUrl,
+  mappend(Constants.TEMPORARY_MODULES_PATH),
+)
 readMadlibDotJson :: Config -> Dependency -> Wish {} (Validate MadlibDotJson)
 readMadlibDotJson = (config, dependency) => pipe(
+  projectBaseUrl,
+  mappend($, "/madlib.json"),
   MadlibDotJson.load(config),
   map(Valid),
   discardError(
@@ -76,10 +89,12 @@ readMadlibDotJson = (config, dependency) => pipe(
       ValidationError([], $, Nothing),
     ),
   ),
-)(`${projectBaseUrl(dependency)}/madlib.json`)
+)(dependency)
 readVersionDotLock :: Config -> Dependency -> Wish {} (Validate (Maybe VersionDotLock))
 readVersionDotLock = (config, dependency) => pipe(
-  (d) => VersionDotLock.load(config, `${projectBaseUrl(d)}/version.lock`),
+  projectBaseUrl,
+  mappend($, "/version.lock"),
+  VersionDotLock.load(config),
   map(
     pipe(
       Just,
@@ -99,28 +114,25 @@ computeBuildHash = (config, dependency) => pipe(
   map(Valid),
   discardError(always(NotValid([BuildHashCouldNotBeGenerated], ""))),
 )(dependency)
+computeVersionHash = (versionDotLock, computedBuildHash, madlibDotJson) => (
+  {
+    madlibDotJson,
+    versionDotLock,
+    computedVersionHash: Version.hash(madlibDotJson.version),
+    computedBuildHash,
+  }
+)
 prepareValidationInput :: Config -> Dependency -> Wish {} (Validate ValidationInput)
 prepareValidationInput = (config, dependency) => pipe(
   readVersionDotLock(config),
-  map(
-    liftA3(
-      (versionDotLock, computedBuildHash, madlibDotJson) => (
-        {
-          madlibDotJson,
-          versionDotLock,
-          computedVersionHash: hashVersion(madlibDotJson.version),
-          computedBuildHash,
-        }
-      ),
-    ),
-  ),
+  map(liftA3(computeVersionHash)),
   ap($, computeBuildHash(config, dependency)),
   ap($, readMadlibDotJson(config, dependency)),
 )(dependency)
 tryRecovery :: Validate a -> Validate a
-tryRecovery = (validation) => where(validation) {
+tryRecovery = (v) => where(v) {
   _ =>
-    validation
+    v
 }
 runPostInstallHook :: Boolean -> MadlibDotJson -> a -> Wish {} a
 runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
@@ -154,9 +166,9 @@ postProcess :: #[Context, List Dependency]
   -> Dependency
   -> Validate ValidationOutput
   -> Wish {} #[Context, List Dependency]
-postProcess = (previousContextAndDeps, processedDependency, validation) => where(validation) {
+postProcess = (prev, processed, validation) => where(validation) {
   ValidationError(_, _, _) =>
-    of(previousContextAndDeps)
+    of(prev)
 
   v =>
     do {
@@ -172,53 +184,40 @@ postProcess = (previousContextAndDeps, processedDependency, validation) => where
         )(result.madlibDotJson.dependencies),
       }
       return pipe(
-        (validationResult) => (
+        (val) => (
           {
-            ...validationResult,
+            ...val,
             context: pipe(
-              addInstalledPackage(processedDependency.sanitizedUrl),
-              addLockEntry(processedDependency.url, lockEntry),
-            )(validationResult.context),
+              .context,
+              addInstalledPackage(processed.sanitizedUrl),
+              addLockEntry(processed.url, lockEntry),
+            )(val),
           }
         ),
-        (validationResult) => of(#[
-          validationResult.context,
-          mappend(
-            Tuple.snd(previousContextAndDeps),
-            fromMaybe([], validationResult.madlibDotJson.dependencies),
-          ),
+        (val) => of(#[
+          val.context,
+          mappend(Tuple.snd(prev), fromMaybe([], val.madlibDotJson.dependencies)),
         ]),
       )(result)
     }
 }
 lookupSourceLockEntry :: Context -> Dependency -> Maybe LockEntry
-lookupSourceLockEntry = (context, dependency) => Dictionary.get(
-  dependency.url,
-  context.sourceLockEntries,
+lookupSourceLockEntry = ({ sourceLockEntries: source }, { url: key }) => (
+  Dictionary.get(key, source)
 )
 installedDependencyChildren :: Context -> List Dependency -> List Dependency
 installedDependencyChildren = (context, dependencies) => pipe(
   List.mapMaybe(
-    (dependency) => where(lookupSourceLockEntry(context, dependency)) {
-      Just(entry) =>
-        Just(
-          map(
-            (url) => (
-              {
-                url,
-                sanitizedUrl: sanitizeUrl(url),
-                versionRange: AnyVersion,
-                description: Nothing,
-                name: Nothing,
-              }
-            ),
-            entry.dependencies,
-          ),
-        )
+    pipe(
+      lookupSourceLockEntry(context),
+      where {
+        Just(entry) =>
+          Just(map(Dependency.create, entry.dependencies))
 
-      Nothing =>
-        Nothing
-    },
+        Nothing =>
+          Nothing
+      },
+    ),
   ),
   List.flatten,
 )(dependencies)
@@ -275,8 +274,10 @@ processDependency = (config, reporter, contextAndNextDeps, dependency) => pipe(
           do {
             reporter.installing(a.madlibDotJson.name)
             List.forEach(
-              (warning) => reporter.reportedWarning(
-                `${a.madlibDotJson.name}: ${warningMessage(warning)}`,
+              pipe(
+                warningMessage,
+                mappend(a.madlibDotJson.name ++ ": "),
+                reporter.reportedWarning,
               ),
               warnings,
             )
@@ -402,15 +403,14 @@ installedDependencyFolders = (config) => pipe(
   config.readDir,
   discardError(always([])),
 )(Constants.MADLIB_MODULES_PATH)
+sameLockName = (a, b) => a.name == b.name
+sameVersion = (a, b) => a.version == b.version
+sameBuildHash = (a, b) => a.buildHash == b.buildHash
+sameVersionHash = (a, b) => a.versionHash == b.versionHash
 sameLockEntry :: LockEntry -> LockEntry -> Boolean
-sameLockEntry = (a, b) => a.name
-    == b.name
-    && a.version
-    == b.version
-    && a.buildHash
-    == b.buildHash
-    && a.versionHash
-    == b.versionHash
+sameLockEntry = (a, b) => (
+  sameLockName(a, b) && sameVersion(a, b) && sameBuildHash(a, b) && sameVersionHash(a, b)
+)
 canReusePackage :: Config -> MadlibLock -> String -> LockEntry -> Wish {} Boolean
 canReusePackage = (config, previousLock, url, entry) => where(
   Dictionary.get(url, previousLock.packages)
@@ -419,10 +419,8 @@ canReusePackage = (config, previousLock, url, entry) => where(
     sameLockEntry(previous, entry)
       ? pipe(
         map(
-          (installed) => installed.name
-              == entry.name
-              && Version.showVersion(installed.version)
-              == entry.version,
+          (installed) => (installed.name == entry.name)
+              && (Version.showVersion(installed.version) == entry.version),
         ),
         discardError(always(false)),
       )(MadlibDotJson.load(config, `${Constants.MADLIB_MODULES_PATH}${entry.name}/madlib.json`))
@@ -468,9 +466,9 @@ materializePackage = (config, previousLock, pair) => where(pair) {
       (reuse) => reuse
         ? of({})
         : do {
-          destination = `${Constants.MADLIB_MODULES_PATH}${entry.name}/`
-          staging = `${Constants.MADLIB_MODULES_PATH}.${entry.name}.madlib-stage/`
-          backup = `${Constants.MADLIB_MODULES_PATH}.${entry.name}.madlib-backup/`
+          destination = madpathFolder(entry.name)
+          staging = madpathFolder(".madlib-stage")
+          backup = madpathFolder(".madlib-backup")
           _ <- pipe(
             discardError(always({})),
           )(config.remove(staging, { recursive: true }))
@@ -645,9 +643,12 @@ buildDeltaContext = (config, lock) => pipe(
     (pair) => where(pair) {
       #[url, entry] =>
         pipe(
+          madpathFolder,
+          mappend($, "madlib.json"),
+          config.exists,
           map((_) => Just(sanitizeUrl(url))),
           discardError(always(Nothing)),
-        )(config.exists(`${Constants.MADLIB_MODULES_PATH}${entry.name}/madlib.json`))
+        )(entry.name)
     },
   ),
   parallelN(16),

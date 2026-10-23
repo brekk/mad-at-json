@@ -39,3 +39,12 @@ export dependencyParser = J.field(
     ),
   ),
 )
+export create = (url) => (
+  {
+    url,
+    sanitizedUrl: sanitizeUrl(url),
+    versionRange: Version.AnyVersion,
+    description: Nothing,
+    name: Nothing,
+  }
+)

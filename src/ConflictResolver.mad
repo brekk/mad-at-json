@@ -34,8 +34,7 @@ export versionChoices = (name, packages) => pipe(
   List.reduce(
     (acc, url) => where(Dictionary.get(url, packages)) {
       Just(entry) =>
-        entry.name
-          == name
+        (entry.name == name)
           && !List.any((vc) => where(vc) { VersionChoice(v, _) => v == entry.version }, acc)
           ? [...acc, VersionChoice(entry.version, url)]
           : acc
@@ -79,17 +78,15 @@ parsedChoices = List.mapMaybe(
 samePatchLine :: List VersionChoice -> Boolean
 samePatchLine = (choices) => {
   parsed = parsedChoices(choices)
-  return List.length(parsed)
-    == List.length(choices)
+  sameLen = List.length(parsed) == List.length(choices)
+  return sameLen
     && where(parsed) {
       [#[first, _], ...rest] =>
         List.all(
-          (pair) => where(pair) {
+          where {
             #[version, _] =>
-              Version.getMajor(version)
-                == Version.getMajor(first)
-                && Version.getMinor(version)
-                == Version.getMinor(first)
+              (Version.getMajor(version) == Version.getMajor(first))
+                && (Version.getMinor(version) == Version.getMinor(first))
           },
           rest,
         )
@@ -140,8 +137,8 @@ pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
     ],
     choices,
   )
-  totalMenuLines = 6
-    + List.reduce(
+  totalMenuLines = (
+    List.reduce(
       (sum, opt) => where(opt) {
         #[_, chains] =>
           sum + 1 + List.length(chains)
@@ -149,6 +146,8 @@ pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
       0,
       options,
     )
+      + 6
+  )
   selectedIndex = 0
   renderedLines = 0
   handlerId :: Maybe Terminal.HandlerId
@@ -157,13 +156,9 @@ pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
   render = () => {
     if (renderedLines > 0) {
       IO.put(Terminal.moveCursorUp(renderedLines))
+    } else do {
+      return {}
     }
-
-
-
-
-
-
 
 
     IO.put(Terminal.clearToEndOfScreen({}))

@@ -145,16 +145,11 @@ getPackageData = (config, onProgress, url) => pipe(
   chain(
     (response) => response.status == OK
       ? of(response.body)
-      : response.status
-        == 301
-        || response.status
-        == 302
-        || response.status
-        == 303
-        || response.status
-        == 307
-        || response.status
-        == 308
+      : (response.status == 301)
+        || (response.status == 302)
+        || (response.status == 303)
+        || (response.status == 307)
+        || (response.status == 308)
         ? pipe(
           getHeader("Location"),
           where {

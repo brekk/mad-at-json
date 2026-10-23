@@ -2,7 +2,7 @@ import IO from "IO"
 
 import Study from "Study"
 
-import { boundColor, green, red, safeColor, yellow } from "@/Color"
+import { boundColor, green, red, safeColor, yellow } from "@model/Color"
 
 
 

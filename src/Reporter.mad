@@ -99,7 +99,9 @@ export make = (tty, startedAt) => {
 
 
 
-    /**/
+
+
+
     IO.put(Terminal.clearToEndOfScreen({}))
     IO.putLine(
       statusLine(
@@ -127,6 +129,12 @@ export make = (tty, startedAt) => {
   log = (message) => if (!tty) {
     line(message)
   }
+
+
+
+
+
+
 
 
 
@@ -213,6 +221,12 @@ export make = (tty, startedAt) => {
 
 
 
+
+
+
+
+
+
     elapsed = DateNow({}) - startedAt
     line("")
     line(Color.bold("Package install summary"))
@@ -259,9 +273,9 @@ export make = (tty, startedAt) => {
   }
 
   return {
-    start: start,
-    scheduled: scheduled,
-    downloading: downloading,
+    start,
+    scheduled,
+    downloading,
     cached: markCached,
     downloaded: markDownloaded,
     downloadFinished: markDownloadFinished,
@@ -270,9 +284,9 @@ export make = (tty, startedAt) => {
     installed: markInstalled,
     skipped: markSkipped,
     reportedWarning: reportedWarning,
-    failed: failed,
+    failed,
     progress: trackProgress,
-    complete: complete,
+    complete,
   }
 }
 #iftarget llvm

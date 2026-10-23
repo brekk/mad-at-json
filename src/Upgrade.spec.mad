@@ -95,9 +95,9 @@ MADLIB_JSON_WITH_DEP = `{
   ++ CURRENT_URL
   ++ `" }]
 }`
-LOCK_JSON = "{\\"lockfileVersion\\":1,\\"packages\\":{\\""
+LOCK_JSON = `{"lockfileVersion":1,"packages":{"`
   ++ CURRENT_URL
-  ++ "\\":{\\"name\\":\\"pkg\\",\\"version\\":\\"1.0.0\\",\\"buildHash\\":\\"aaa\\",\\"versionHash\\":\\"bbb\\",\\"dependencies\\":[]}}}"
+  ++ `":{"name":"pkg","version":"1.0.0","buildHash":"aaa","versionHash":"bbb","dependencies":[]}}}`
 test(
   "applyUpgrades - replaces old URL with new URL in madlib.json",
   (_) => {
@@ -204,6 +204,24 @@ test(
     { "url": "https://github.com/example/other/archive/refs/tags/v0.1.0.zip" }
   ]
 }`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

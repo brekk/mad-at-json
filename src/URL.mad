@@ -1,6 +1,6 @@
-import { hashString } from "./Hash"
+import Crypto from "Crypto"
 
 
 
 sanitizeUrl :: String -> String
-export sanitizeUrl = (url) => `u_${hashString(url)}`
+export sanitizeUrl = (url) => `u_${Crypto.md5(url)}`
