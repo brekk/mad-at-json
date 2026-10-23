@@ -1,6 +1,6 @@
 import type { Maybe } from "Maybe"
 
-import type { Options, ResolutionOverride } from "./ConflictResolver"
+import type { Options, ResolutionOverride } from "@model/ConflictResolver"
 
 import { always, identity } from "Function"
 import IO from "IO"
@@ -10,12 +10,12 @@ import Process from "Process"
 import String from "String"
 import { fulfill } from "Wish"
 
-import { defaultConfig } from "./Config"
-import Graph from "./Graph"
-import { run } from "./Run"
-import Upgrade from "./Upgrade"
-import Version from "./Version"
-import Why from "./Why"
+import Graph from "@model/Graph"
+import { baseProxy } from "@model/Proxy"
+import { run } from "@model/Run"
+import Upgrade from "@model/Upgrade"
+import Version from "@model/Version"
+import Why from "@model/Why"
 
 
 
@@ -70,7 +70,7 @@ parseMode = (args) => where(List.drop(1, args)) {
 }
 main = () => {
   mode = parseMode(Process.Argv)
-  config = defaultConfig
+  config = baseProxy
   exitWithError = (error) => {
     IO.trace("error", error)
     return Process.exit(1)

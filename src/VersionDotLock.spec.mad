@@ -5,6 +5,7 @@ import { ErrorWithMessage, assertEquals, test } from "Test"
 import { bad, bichain, good } from "Wish"
 
 import { load, parse } from "./VersionDotLock"
+import { fakeProxy } from "@model/Proxy"
 
 
 
@@ -46,23 +47,7 @@ BAD_VERSION_DOT_LOCK = `{
     "apiInterfaces": {}
   }
 }`
-DEFAULT_CONFIG = {
-  readFile: always(good(VERSION_DOT_LOCK)),
-  writeFile: (_, _) => good({}),
-  writeBytes: (_, _) => good({}),
-  readDir: always(good([])),
-  createDir: (_, _) => good({}),
-  remove: (_, _) => good({}),
-  copy: (_, _, _) => good({}),
-  rename: (_, _) => good({}),
-  unzip: (_, _) => good({}),
-  exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
-  exists: always(good(true)),
-  getBytes: always(good({ headers: [], status: 200, body: ByteArray.empty() })),
-  getBytesWithProgress: (_, _) => good({ headers: [], status: 200, body: ByteArray.empty() }),
-  isTTY: (_) => false,
-  now: (_) => 0,
-}
+DEFAULT_CONFIG = { ...fakeProxy, readFile: always(good(VERSION_DOT_LOCK)) }
 test(
   "parse - success",
   (_) => {

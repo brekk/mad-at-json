@@ -2,7 +2,7 @@ import type { Value } from "Json/Value"
 
 import type { Wish } from "Wish"
 
-import type { Config } from "./Config"
+import type { Proxy } from "@model/Proxy"
 
 import Dictionary from "Dictionary"
 import { Left, Right } from "Either"
@@ -115,9 +115,9 @@ serialize = (lock) => pipe(
 )(lock)
 // ---- File I/O ---------------------------------------------------------------
 
-load :: Config -> String -> Wish String MadlibLock
-export load = (config, path) => pipe(
-  config.readFile,
+load :: Proxy -> String -> Wish String MadlibLock
+export load = (proxy, path) => pipe(
+  proxy.readFile,
   mapRej(always(`Lock file not found at '${path}'`)),
   chain(
     pipe(
@@ -132,8 +132,8 @@ export load = (config, path) => pipe(
     ),
   ),
 )(path)
-write :: Config -> String -> MadlibLock -> Wish IO.Error {}
-export write = (config, path, lock) => config.writeFile(path, serialize(lock))
+write :: Proxy -> String -> MadlibLock -> Wish IO.Error {}
+export write = (proxy, path, lock) => proxy.writeFile(path, serialize(lock))
 // After conflict resolution some URLs are pruned from the packages dict.
 // Rewrite every remaining entry's `dependencies` so that pruned URLs are
 // replaced by the URL of the surviving entry with the same package name.

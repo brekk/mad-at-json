@@ -1,7 +1,7 @@
 import type { Wish } from "Wish"
 
-import type { Config } from "./Config"
-import type { Dependency } from "./Dependency"
+import type { Dependency } from "@model/Dependency"
+import type { Proxy } from "@model/Proxy"
 
 import FilePath from "FilePath"
 import { always, ifElse } from "Function"
@@ -12,7 +12,7 @@ import Process from "Process"
 import String from "String"
 import { bad, bichain, chainRej, discardError, mapRej } from "Wish"
 
-import Constants from "./Constants"
+import Constants from "@model/Constants"
 
 
 
@@ -89,58 +89,58 @@ downloadErrorMessage :: Dependency -> DownloadFailure -> String
 export downloadErrorMessage = (dependency, failure) => `Package from '${
   dependency.url
 }' failed to be downloaded: ${formatDownloadFailure(failure)}`
-removeIfExists :: Config -> String -> Wish {} {}
-removeIfExists = (config, path) => pipe(
-  config.exists,
-  bichain(always(of({})), () => discardError(always({}), config.remove(path, { recursive: true }))),
+removeIfExists :: Proxy -> String -> Wish {} {}
+removeIfExists = (proxy, path) => pipe(
+  proxy.exists,
+  bichain(always(of({})), () => discardError(always({}), proxy.remove(path, { recursive: true }))),
 )(path)
-validateCacheEntry :: Config -> Dependency -> Wish DownloadFailure {}
-validateCacheEntry = (config, dependency) => pipe(
+validateCacheEntry :: Proxy -> Dependency -> Wish DownloadFailure {}
+validateCacheEntry = (proxy, dependency) => pipe(
   cachePath,
   madlibJsonPath,
-  config.exists,
+  proxy.exists,
   map(always({})),
   mapRej(always(CacheValidationFailure(cachePath(dependency)))),
 )(dependency)
-validateGlobalCacheEntry :: Config -> Dependency -> Wish {} {}
-validateGlobalCacheEntry = (config, dependency) => pipe(
+validateGlobalCacheEntry :: Proxy -> Dependency -> Wish {} {}
+validateGlobalCacheEntry = (proxy, dependency) => pipe(
   globalCachePath,
   madlibJsonPath,
-  config.exists,
+  proxy.exists,
   map(always({})),
   mapRej(always({})),
 )(dependency)
-copyFromGlobalToProject :: Config -> Dependency -> Wish {} DownloadResult
-copyFromGlobalToProject = (config, dependency) => pipe(
+copyFromGlobalToProject :: Proxy -> Dependency -> Wish {} DownloadResult
+copyFromGlobalToProject = (proxy, dependency) => pipe(
   mapRej(always(LocalCopyFailure(cachePath(dependency)))),
   chain(
     (_) => pipe(
       mapRej(always(LocalCopyFailure(globalCachePath(dependency)))),
     )(
-      config.copy(
+      proxy.copy(
         globalCachePath(dependency),
         cachePath(dependency),
         { recursive: true, overwrite: true, exclude: [] },
       ),
     ),
   ),
-  chain((_) => validateCacheEntry(config, dependency)),
+  chain((_) => validateCacheEntry(proxy, dependency)),
   andDo(of(Downloaded(dependency, FromCache))),
   discardError((failure) => DownloadError(dependency, failure)),
-)(removeIfExists(config, cachePath(dependency)))
-populateGlobalCache :: Config -> Dependency -> Wish {} {}
-populateGlobalCache = (config, dependency) => pipe(
+)(removeIfExists(proxy, cachePath(dependency)))
+populateGlobalCache :: Proxy -> Dependency -> Wish {} {}
+populateGlobalCache = (proxy, dependency) => pipe(
   chain(
-    (_) => config.copy(
+    (_) => proxy.copy(
       cachePath(dependency),
       globalCachePath(dependency),
       { recursive: true, overwrite: true, exclude: [] },
     ),
   ),
   discardError(always({})),
-)(config.createDir(globalCacheBase({}), { recursive: true }))
-getPackageData :: Config -> (Integer -> Integer -> {}) -> String -> Wish DownloadFailure ByteArray
-getPackageData = (config, onProgress, url) => pipe(
+)(proxy.createDir(globalCacheBase({}), { recursive: true }))
+getPackageData :: Proxy -> (Integer -> Integer -> {}) -> String -> Wish DownloadFailure ByteArray
+getPackageData = (proxy, onProgress, url) => pipe(
   mapRej(formatHttpError),
   chain(
     (response) => response.status == OK
@@ -154,7 +154,7 @@ getPackageData = (config, onProgress, url) => pipe(
           getHeader("Location"),
           where {
             [Header(_, redirectUrl), ..._] =>
-              getPackageData(config, onProgress, redirectUrl)
+              getPackageData(proxy, onProgress, redirectUrl)
 
             _ =>
               bad(RedirectMissingLocation(url))
@@ -162,14 +162,14 @@ getPackageData = (config, onProgress, url) => pipe(
         )(response)
         : bad(HttpStatusFailure(response.status)),
   ),
-)(config.getBytesWithProgress(url, onProgress))
-saveArchive :: Config -> Dependency -> ByteArray -> Wish DownloadFailure {}
-saveArchive = (config, dependency, data) => pipe(
-  config.writeBytes(archivePath(dependency)),
+)(proxy.getBytesWithProgress(url, onProgress))
+saveArchive :: Proxy -> Dependency -> ByteArray -> Wish DownloadFailure {}
+saveArchive = (proxy, dependency, data) => pipe(
+  proxy.writeBytes(archivePath(dependency)),
   mapRej(always(ArchiveWriteFailure(archivePath(dependency)))),
 )(data)
-promoteExtractedRoot :: Config -> Dependency -> String -> Wish DownloadFailure {}
-promoteExtractedRoot = (config, dependency, extractedRoot) => pipe(
+promoteExtractedRoot :: Proxy -> Dependency -> String -> Wish DownloadFailure {}
+promoteExtractedRoot = (proxy, dependency, extractedRoot) => pipe(
   mapRej(always(InvalidArchiveShape(`could not clean '${cachePath(dependency)}'`))),
   chain(
     (_) => pipe(
@@ -178,11 +178,11 @@ promoteExtractedRoot = (config, dependency, extractedRoot) => pipe(
           InvalidArchiveShape(`could not promote '${extractedRoot}' to '${cachePath(dependency)}'`),
         ),
       ),
-    )(config.rename(extractedRoot, cachePath(dependency))),
+    )(proxy.rename(extractedRoot, cachePath(dependency))),
   ),
-)(removeIfExists(config, cachePath(dependency)))
-normalizeExtractedArchive :: Config -> Dependency -> Wish DownloadFailure {}
-normalizeExtractedArchive = (config, dependency) => {
+)(removeIfExists(proxy, cachePath(dependency)))
+normalizeExtractedArchive :: Proxy -> Dependency -> Wish DownloadFailure {}
+normalizeExtractedArchive = (proxy, dependency) => {
   root = extractPath(dependency)
   promoteSingleEntry = (entry) => {
     child = FilePath.joinPath([root, entry])
@@ -190,14 +190,14 @@ normalizeExtractedArchive = (config, dependency) => {
       bichain(always(of(false)), always(of(true))),
       chain(
         (hasManifest) => hasManifest
-          ? promoteExtractedRoot(config, dependency, child)
+          ? promoteExtractedRoot(proxy, dependency, child)
           : bad(
             InvalidArchiveShape(
               "expected madlib.json at archive root or in the single top-level directory",
             ),
           ),
       ),
-    )(config.exists(madlibJsonPath(child)))
+    )(proxy.exists(madlibJsonPath(child)))
   }
 
   return pipe(
@@ -218,67 +218,67 @@ normalizeExtractedArchive = (config, dependency) => {
                 )
             },
           ),
-        )(config.readDir(root)),
+        )(proxy.readDir(root)),
       ),
-      always(promoteExtractedRoot(config, dependency, root)),
+      always(promoteExtractedRoot(proxy, dependency, root)),
     ),
-  )(config.exists(madlibJsonPath(root)))
+  )(proxy.exists(madlibJsonPath(root)))
 }
-extractArchive :: Config -> Dependency -> Wish DownloadFailure {}
-extractArchive = (config, dependency) => pipe(
+extractArchive :: Proxy -> Dependency -> Wish DownloadFailure {}
+extractArchive = (proxy, dependency) => pipe(
   mapRej(always(ArchiveExtractFailure(extractPath(dependency)))),
   chain(
     (_) => pipe(
       mapRej(always(ArchiveExtractFailure(extractPath(dependency)))),
-    )(config.createDir(extractPath(dependency), { recursive: true })),
+    )(proxy.createDir(extractPath(dependency), { recursive: true })),
   ),
   chain(
     (_) => pipe(
       mapRej(always(ArchiveExtractFailure(extractPath(dependency)))),
-    )(config.unzip(archivePath(dependency), extractPath(dependency))),
+    )(proxy.unzip(archivePath(dependency), extractPath(dependency))),
   ),
-  chain((_) => normalizeExtractedArchive(config, dependency)),
-  chain((_) => validateCacheEntry(config, dependency)),
+  chain((_) => normalizeExtractedArchive(proxy, dependency)),
+  chain((_) => validateCacheEntry(proxy, dependency)),
   chain(
     (_) => pipe(
       mapRej(always(ArchiveWriteFailure(archivePath(dependency)))),
-    )(removeIfExists(config, archivePath(dependency))),
+    )(removeIfExists(proxy, archivePath(dependency))),
   ),
   chain(
     (_) => pipe(
       mapRej(always(ArchiveExtractFailure(extractPath(dependency)))),
-    )(removeIfExists(config, extractPath(dependency))),
+    )(removeIfExists(proxy, extractPath(dependency))),
   ),
-)(removeIfExists(config, extractPath(dependency)))
-downloadPackageWithHttp :: Config
+)(removeIfExists(proxy, extractPath(dependency)))
+downloadPackageWithHttp :: Proxy
   -> (Integer -> Integer -> {})
   -> Dependency
   -> String
   -> Wish {} DownloadResult
-downloadPackageWithHttp = (config, onProgress, dependency, url) => pipe(
+downloadPackageWithHttp = (proxy, onProgress, dependency, url) => pipe(
   mapRej(always(ArchiveWriteFailure(archivePath(dependency)))),
   chain(
     (_) => pipe(
       mapRej(always(ArchiveExtractFailure(extractPath(dependency)))),
-    )(removeIfExists(config, extractPath(dependency))),
+    )(removeIfExists(proxy, extractPath(dependency))),
   ),
-  chain((_) => getPackageData(config, onProgress, url)),
-  chain(saveArchive(config, dependency)),
-  andDo(extractArchive(config, dependency)),
+  chain((_) => getPackageData(proxy, onProgress, url)),
+  chain(saveArchive(proxy, dependency)),
+  andDo(extractArchive(proxy, dependency)),
   andDo(of(Downloaded(dependency, FromRemote))),
   chainRej(
     (failure) => pipe(
-      andDo(removeIfExists(config, extractPath(dependency))),
+      andDo(removeIfExists(proxy, extractPath(dependency))),
       andDo(of(DownloadError(dependency, failure))),
-    )(removeIfExists(config, archivePath(dependency))),
+    )(removeIfExists(proxy, archivePath(dependency))),
   ),
-)(removeIfExists(config, archivePath(dependency)))
-copyLocalPackage :: Config -> Dependency -> String -> Wish {} DownloadResult
-copyLocalPackage = (config, dependency, uri) => pipe(
+)(removeIfExists(proxy, archivePath(dependency)))
+copyLocalPackage :: Proxy -> Dependency -> String -> Wish {} DownloadResult
+copyLocalPackage = (proxy, dependency, uri) => pipe(
   String.drop(7),
   (path) => pipe(
     (p) => FilePath.joinPath([p, "madlib.json"]),
-    config.exists,
+    proxy.exists,
     mapRej(always(LocalCopyFailure(path))),
     chain((exists) => exists ? of(path) : bad(LocalCopyFailure(path))),
   )(path),
@@ -289,7 +289,7 @@ copyLocalPackage = (config, dependency, uri) => pipe(
         (_) => pipe(
           mapRej(always(LocalCopyFailure(path))),
         )(
-          config.copy(
+          proxy.copy(
             path,
             cachePath(dependency),
             {
@@ -300,41 +300,41 @@ copyLocalPackage = (config, dependency, uri) => pipe(
           ),
         ),
       ),
-      chain((_) => validateCacheEntry(config, dependency)),
-    )(removeIfExists(config, cachePath(dependency))),
+      chain((_) => validateCacheEntry(proxy, dependency)),
+    )(removeIfExists(proxy, cachePath(dependency))),
   ),
   andDo(of(Downloaded(dependency, FromRemote))),
   discardError((failure) => DownloadError(dependency, failure)),
 )(uri)
-downloadPackage :: Config -> (Integer -> Integer -> {}) -> Dependency -> Wish {} DownloadResult
-downloadPackage = (config, onProgress, dependency) => pipe(
+downloadPackage :: Proxy -> (Integer -> Integer -> {}) -> Dependency -> Wish {} DownloadResult
+downloadPackage = (proxy, onProgress, dependency) => pipe(
   .url,
   ifElse(
     String.startsWith("file://"),
-    copyLocalPackage(config, dependency),
-    downloadPackageWithHttp(config, onProgress, dependency),
+    copyLocalPackage(proxy, dependency),
+    downloadPackageWithHttp(proxy, onProgress, dependency),
   ),
 )(dependency)
-downloadIfNotCached :: Config -> (Integer -> Integer -> {}) -> Dependency -> Wish {} DownloadResult
-export downloadIfNotCached = (config, onProgress, dependency) => pipe(
+downloadIfNotCached :: Proxy -> (Integer -> Integer -> {}) -> Dependency -> Wish {} DownloadResult
+export downloadIfNotCached = (proxy, onProgress, dependency) => pipe(
   bichain(
     (_) => pipe(
       bichain(
         (_) => pipe(
-          andDo(downloadPackage(config, onProgress, dependency)),
+          andDo(downloadPackage(proxy, onProgress, dependency)),
           chain(
             (result) => where(result) {
               Downloaded(d, _) =>
-                andDo(of(Downloaded(d, FromRemote)), populateGlobalCache(config, d))
+                andDo(of(Downloaded(d, FromRemote)), populateGlobalCache(proxy, d))
 
               DownloadError(_, _) =>
                 of(result)
             },
           ),
-        )(removeIfExists(config, cachePath(dependency))),
-        (_) => copyFromGlobalToProject(config, dependency),
+        )(removeIfExists(proxy, cachePath(dependency))),
+        (_) => copyFromGlobalToProject(proxy, dependency),
       ),
-    )(validateGlobalCacheEntry(config, dependency)),
+    )(validateGlobalCacheEntry(proxy, dependency)),
     always(of(Downloaded(dependency, FromCache))),
   ),
-)(validateCacheEntry(config, dependency))
+)(validateCacheEntry(proxy, dependency))

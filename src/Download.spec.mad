@@ -1,17 +1,22 @@
-import type { Dependency } from "./Dependency"
+import type { Dependency } from "@model/Dependency"
 
-import ByteArray from "ByteArray"
 import { always } from "Function"
-import { OK } from "Http"
 import { Nothing } from "Maybe"
 import String from "String"
 import { ErrorWithMessage, assertEquals, test } from "Test"
 import { bad, good, mapRej } from "Wish"
 
-import { downloadIfNotCached } from "./Download"
-import { DownloadError, Downloaded, FromCache, FromRemote, formatDownloadFailure } from "./Download"
-import { sanitizeUrl } from "./URL"
-import { AnyVersion } from "./Version"
+import { downloadIfNotCached } from "@model/Download"
+import {
+  DownloadError,
+  Downloaded,
+  FromCache,
+  FromRemote,
+  formatDownloadFailure,
+} from "@model/Download"
+import Proxy from "@model/Proxy"
+import { sanitizeUrl } from "@model/URL"
+import { AnyVersion } from "@model/Version"
 
 
 
@@ -36,23 +41,7 @@ resultLabel = where {
     formatDownloadFailure(failure)
 }
 localExists = (path) => String.startsWith(".module_cache/", path) ? good(true) : bad({})
-baseConfig = {
-  readFile: (_) => good(""),
-  writeFile: (_, _) => good({}),
-  writeBytes: (_, _) => good({}),
-  readDir: (_) => good([]),
-  createDir: (_, _) => good({}),
-  remove: (_, _) => good({}),
-  copy: (_, _, _) => good({}),
-  rename: (_, _) => good({}),
-  unzip: (_, _) => good({}),
-  exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
-  exists: localExists,
-  getBytes: (_) => good({ headers: [], status: OK, body: ByteArray.empty() }),
-  getBytesWithProgress: (_, _) => good({ headers: [], status: OK, body: ByteArray.empty() }),
-  isTTY: (_) => false,
-  now: (_) => 0,
-}
+fakeProxy = { ...Proxy.fakeProxy, readFile: (_) => good(""), exists: localExists }
 test(
   "downloadIfNotCached - valid cache is reused",
   (_) => {
@@ -62,7 +51,7 @@ test(
       map(resultLabel),
       mapRej(always(ErrorWithMessage("download failed"))),
       chain(assertEquals($, "cache")),
-    )(downloadIfNotCached(baseConfig, (_, _) => {}, dep))
+    )(downloadIfNotCached(fakeProxy, (_, _) => {}, dep))
   },
 )
 test(
@@ -72,7 +61,8 @@ test(
     cacheReady = false
 
     config = {
-      ...baseConfig,
+      ...fakeProxy,
+      readFile: (_) => good(""),
       exists: (path) => {
         cacheManifest = `.module_cache/${dep.sanitizedUrl}/madlib.json`
         extractedManifest = `.module_cache/${dep.sanitizedUrl}-tmp/madlib.json`
@@ -101,7 +91,7 @@ test(
     cacheReady = false
 
     config = {
-      ...baseConfig,
+      ...fakeProxy,
       readDir: (_) => good(["pkg"]),
       exists: (path) => {
         cacheManifest = `.module_cache/${dep.sanitizedUrl}/madlib.json`
@@ -131,7 +121,7 @@ test(
     dep = dependency("http://repo.com/bad-package.zip")
 
     config = {
-      ...baseConfig,
+      ...fakeProxy,
       readDir: (_) => good(["a", "b"]),
       exists: (path) => {
         cacheManifest = `.module_cache/${dep.sanitizedUrl}/madlib.json`

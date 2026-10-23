@@ -1,6 +1,6 @@
 import type { Wish } from "Wish"
 
-import type { Config } from "./Config"
+import type { Proxy } from "@model/Proxy"
 
 import { Left, Right } from "Either"
 import { always } from "Function"
@@ -52,7 +52,7 @@ export parse = pipe(
       of(a)
   },
 )
-load :: Config -> String -> Wish String VersionDotLock
+load :: Proxy -> String -> Wish String VersionDotLock
 export load = (config, path) => pipe(
   config.readFile,
   bichain(

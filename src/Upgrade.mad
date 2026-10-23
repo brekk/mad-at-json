@@ -1,7 +1,7 @@
 import type { Maybe } from "Maybe"
 import type { Wish } from "Wish"
 
-import type { Config } from "./Config"
+import type { Proxy } from "@model/Proxy"
 
 import ByteArray from "ByteArray"
 import Dictionary from "Dictionary"
@@ -17,10 +17,10 @@ import Terminal from "Terminal"
 import { Wish } from "Wish"
 import { bichain, discardError, good, mapRej, parallelN } from "Wish"
 
-import Color from "./Color"
-import Constants from "./Constants"
-import MadlibDotJson from "./MadlibDotJson"
-import MadlibLock from "./MadlibLock"
+import Color from "@model/Color"
+import Constants from "@model/Constants"
+import MadlibDotJson from "@model/MadlibDotJson"
+import MadlibLock from "@model/MadlibLock"
 
 
 
@@ -48,9 +48,9 @@ export buildNewUrl = (info, tag) => `https://github.com/${info.owner}/${
 }/archive/refs/tags/${tag}.zip`
 // ---- GitHub API -------------------------------------------------------------
 
-checkLatestRelease :: Config -> GitHubInfo -> Wish {} (Maybe String)
-checkLatestRelease = (config, info) => pipe(
-  config.getBytes,
+checkLatestRelease :: Proxy -> GitHubInfo -> Wish {} (Maybe String)
+checkLatestRelease = (proxy, info) => pipe(
+  proxy.getBytes,
   map(
     (response) => pipe(
       .body,
@@ -69,8 +69,8 @@ checkLatestRelease = (config, info) => pipe(
 )(`https://api.github.com/repos/${info.owner}/${info.repo}/releases/latest`)
 // ---- Candidate building -----------------------------------------------------
 
-buildCandidate :: Config -> String -> MadlibLock.LockEntry -> Wish {} (Maybe UpgradeCandidate)
-buildCandidate = (config, url, entry) => where(parseGitHubTagUrl(url)) {
+buildCandidate :: Proxy -> String -> MadlibLock.LockEntry -> Wish {} (Maybe UpgradeCandidate)
+buildCandidate = (proxy, url, entry) => where(parseGitHubTagUrl(url)) {
   Nothing =>
     of(Nothing)
 
@@ -89,19 +89,19 @@ buildCandidate = (config, url, entry) => where(parseGitHubTagUrl(url)) {
             latestTag: tag,
           })
       },
-      checkLatestRelease(config, info),
+      checkLatestRelease(proxy, info),
     )
 }
-buildCandidates :: Config -> MadlibLock.MadlibLock -> Wish {} (List UpgradeCandidate)
-buildCandidates = (config, lock) => pipe(
+buildCandidates :: Proxy -> MadlibLock.MadlibLock -> Wish {} (List UpgradeCandidate)
+buildCandidates = (proxy, lock) => pipe(
   Dictionary.toList,
-  map((pair) => where(pair) { #[url, entry] => buildCandidate(config, url, entry) }),
+  map((pair) => where(pair) { #[url, entry] => buildCandidate(proxy, url, entry) }),
   parallelN(8),
   map(List.mapMaybe(identity)),
 )(lock.packages)
-filterRootCandidates :: Config -> List UpgradeCandidate -> Wish {} (List UpgradeCandidate)
-filterRootCandidates = (config, candidates) => pipe(
-  MadlibDotJson.load(config),
+filterRootCandidates :: Proxy -> List UpgradeCandidate -> Wish {} (List UpgradeCandidate)
+filterRootCandidates = (proxy, candidates) => pipe(
+  MadlibDotJson.load(proxy),
   map(
     (mdj) => {
       rootUrls = pipe(
@@ -142,9 +142,10 @@ interactivePicker = (candidates) => Wish(
     renderMenu = () => {
       if (renderedLines > 0) {
         IO.put(Terminal.moveCursorUp(renderedLines))
+      } else do {
+        // the formatter is insane
+        return {}
       }
-
-
       IO.put(Terminal.clearLine({}))
       IO.putLine(Color.bold("Select upgrades: ") ++ "↑↓ move  space toggle  enter confirm  q quit")
       IO.put(Terminal.clearLine({}))
@@ -262,10 +263,10 @@ selectAll = (candidates) => {
 }
 // ---- Apply selected upgrades ------------------------------------------------
 
-applyUpgrades :: Config -> List UpgradeCandidate -> Wish {} {}
-export applyUpgrades = (config, selected) => {
+applyUpgrades :: Proxy -> List UpgradeCandidate -> Wish {} {}
+export applyUpgrades = (proxy, selected) => {
   updateJson = pipe(
-    MadlibDotJson.load(config),
+    MadlibDotJson.load(proxy),
     mapRej(always({})),
     map(
       (mdj) => (
@@ -289,14 +290,14 @@ export applyUpgrades = (config, selected) => {
     ),
     chain(
       (mdj) => pipe(
-        config.writeFile("madlib.json"),
+        proxy.writeFile("madlib.json"),
         mapRej(always({})),
       )(MadlibDotJson.serialize(mdj)),
     ),
   )("madlib.json")
 
   updateLock = pipe(
-    MadlibLock.load(config),
+    MadlibLock.load(proxy),
     discardError(always(MadlibLock.empty)),
     map(
       (lock) => (
@@ -312,7 +313,7 @@ export applyUpgrades = (config, selected) => {
     ),
     chain(
       (lock) => pipe(
-        MadlibLock.write(config, Constants.LOCK_FILE_PATH),
+        MadlibLock.write(proxy, Constants.LOCK_FILE_PATH),
         discardError(always({})),
       )(lock),
     ),
@@ -327,8 +328,8 @@ noUpgradesSelected = (_) => {
   IO.putLine("No upgrades selected.")
   return good({})
 }
-runApplyUpgrades :: Config -> List UpgradeCandidate -> Wish {} {}
-runApplyUpgrades = (config, selectedCandidates) => {
+runApplyUpgrades :: Proxy -> List UpgradeCandidate -> Wish {} {}
+runApplyUpgrades = (proxy, selectedCandidates) => {
   count = List.length(selectedCandidates)
   IO.putLine(Color.bold("Applying upgrades..."))
   return pipe(
@@ -343,45 +344,45 @@ runApplyUpgrades = (config, selectedCandidates) => {
         return good({})
       },
     ),
-  )(applyUpgrades(config, selectedCandidates))
+  )(applyUpgrades(proxy, selectedCandidates))
 }
-applySelected :: Config -> List UpgradeCandidate -> Wish {} {}
-applySelected = (config, selectedCandidates) => List.isEmpty(selectedCandidates)
+applySelected :: Proxy -> List UpgradeCandidate -> Wish {} {}
+applySelected = (proxy, selectedCandidates) => List.isEmpty(selectedCandidates)
   ? noUpgradesSelected({})
-  : runApplyUpgrades(config, selectedCandidates)
+  : runApplyUpgrades(proxy, selectedCandidates)
 noUpgradesAvailable :: {} -> Wish {} {}
 noUpgradesAvailable = (_) => {
   IO.putLine(Color.green("All packages are up to date."))
   IO.putLine("")
   return good({})
 }
-runPicker :: Config -> List UpgradeCandidate -> Wish {} {}
-runPicker = (config, candidates) => pipe(
-  chain(applySelected(config)),
+runPicker :: Proxy -> List UpgradeCandidate -> Wish {} {}
+runPicker = (proxy, candidates) => pipe(
+  chain(applySelected(proxy)),
   discardError(always({})),
-)(config.isTTY({}) ? interactivePicker(candidates) : selectAll(candidates))
-processCandidates :: Config -> List UpgradeCandidate -> Wish {} {}
-processCandidates = (config, candidates) => List.isEmpty(candidates)
+)(proxy.isTTY({}) ? interactivePicker(candidates) : selectAll(candidates))
+processCandidates :: Proxy -> List UpgradeCandidate -> Wish {} {}
+processCandidates = (proxy, candidates) => List.isEmpty(candidates)
   ? noUpgradesAvailable({})
-  : runPicker(config, candidates)
+  : runPicker(proxy, candidates)
 noLockFile :: {} -> Wish {} {}
 noLockFile = (_) => {
   IO.putLine(Color.yellow("madlib.lock not found — run madlib install first"))
   return good({})
 }
-renderLock :: Config -> MadlibLock.MadlibLock -> Wish {} {}
-renderLock = (config, lock) => do {
-  candidates <- buildCandidates(config, lock)
-  filteredCandidates <- filterRootCandidates(config, candidates)
-  _ <- processCandidates(config, filteredCandidates)
+renderLock :: Proxy -> MadlibLock.MadlibLock -> Wish {} {}
+renderLock = (proxy, lock) => do {
+  candidates <- buildCandidates(proxy, lock)
+  filteredCandidates <- filterRootCandidates(proxy, candidates)
+  _ <- processCandidates(proxy, filteredCandidates)
   return of({})
 }
-render :: Config -> Wish {} {}
-export render = (config) => {
+render :: Proxy -> Wish {} {}
+export render = (proxy) => {
   IO.putLine("")
   IO.putLine("Checking for updates...")
 
   return pipe(
-    bichain(always(noLockFile({})), renderLock(config)),
-  )(MadlibLock.load(config, Constants.LOCK_FILE_PATH))
+    bichain(always(noLockFile({})), renderLock(proxy)),
+  )(MadlibLock.load(proxy, Constants.LOCK_FILE_PATH))
 }

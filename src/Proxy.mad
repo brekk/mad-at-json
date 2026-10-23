@@ -3,17 +3,24 @@ import type { CommandOptions, CommandResult } from "Process"
 import type { Wish } from "Wish"
 
 import Archive from "Archive"
+import ByteArray from "ByteArray"
 import Date from "Date"
 import Directory from "Directory"
 import File from "File"
+import Http from "Http"
 import { getBytes, getBytesWithProgress } from "Http"
 import IO from "IO"
 import { exec } from "Process"
 import Terminal from "Terminal"
+import Wish from "Wish"
+
+import Shroud from "shroud"
 
 
 
-export alias Config = {
+// we've consolidated a bunch of functions which touch things beyond our process
+// so we can cheat this for testing and other porpoises
+export alias Proxy = {
   copy :: String -> String -> Directory.CopyOptions -> Wish IO.Error {},
   createDir :: String -> Directory.CreateOptions -> Wish IO.Error {},
   exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult,
@@ -24,6 +31,8 @@ export alias Config = {
     -> Wish (Error ByteArray) (Response ByteArray),
   isTTY :: {} -> Boolean,
   now :: {} -> Integer,
+  put :: String -> {},
+  putLine :: String -> {},
   readDir :: String -> Wish IO.Error (List String),
   readFile :: String -> Wish IO.Error String,
   remove :: String -> Directory.RemoveOptions -> Wish IO.Error {},
@@ -32,8 +41,10 @@ export alias Config = {
   writeBytes :: String -> ByteArray -> Wish IO.Error {},
   writeFile :: String -> String -> Wish IO.Error {},
 }
-defaultConfig :: Config
-export defaultConfig = {
+baseProxy :: Proxy
+export baseProxy = {
+  put: IO.put,
+  putLine: IO.putLine,
   readFile: File.read,
   writeFile: File.write,
   writeBytes: File.writeBytes,
@@ -52,4 +63,26 @@ export defaultConfig = {
     Date.now,
     Date.getTimestamp,
   ),
+}
+fakeGetBytes = (_) => Wish.good({ headers: [], status: Http.OK, body: ByteArray.empty() })
+binaryGoodUnit = (_, _) => Wish.good({})
+fakeProxy :: Proxy
+export fakeProxy = {
+  put: (_) => {},
+  putLine: (_) => {},
+  readFile: (_) => Wish.bad(IO.UnknownError),
+  writeFile: binaryGoodUnit,
+  writeBytes: binaryGoodUnit,
+  readDir: (_) => Wish.good([]),
+  createDir: binaryGoodUnit,
+  remove: binaryGoodUnit,
+  copy: (_, _, _) => Wish.good({}),
+  rename: binaryGoodUnit,
+  unzip: binaryGoodUnit,
+  exec: (_, _, _) => Wish.good({ exitCode: 0, stdout: "", stderr: "" }),
+  exists: (_) => Wish.bad({}),
+  getBytes: fakeGetBytes,
+  getBytesWithProgress: (_, _) => fakeGetBytes(),
+  isTTY: (_) => false,
+  now: (_) => 0,
 }

@@ -9,6 +9,7 @@ import { load, parse } from "./MadlibDotJson"
 import { sanitizeUrl } from "./URL"
 import { AnyVersion } from "./Version"
 import { Version } from "./Version"
+import { fakeProxy } from "@model/Proxy"
 
 
 
@@ -97,23 +98,7 @@ test(
 test(
   "load     - success",
   (_) => {
-    config = {
-      readFile: always(good(MADLIB_DOT_JSON_MINIMAL)),
-      writeFile: (_, _) => good({}),
-      writeBytes: (_, _) => good({}),
-      readDir: always(good([])),
-      createDir: (_, _) => good({}),
-      remove: (_, _) => good({}),
-      copy: (_, _, _) => good({}),
-      rename: (_, _) => good({}),
-      unzip: (_, _) => good({}),
-      exists: always(good(true)),
-      exec: (_, _, _) => good({ exitCode: 0, stdout: "OK", stderr: "" }),
-      getBytes: always(good({ body: ByteArray.empty(), headers: [], status: OK })),
-      getBytesWithProgress: (_, _) => good({ body: ByteArray.empty(), headers: [], status: OK }),
-      isTTY: (_) => false,
-      now: (_) => 0,
-    }
+    config = { ...fakeProxy, readFile: always(good(MADLIB_DOT_JSON_MINIMAL)) }
 
     expected = {
       name: "SamplePackage",

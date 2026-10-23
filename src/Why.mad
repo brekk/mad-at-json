@@ -1,7 +1,7 @@
 import type { Wish } from "Wish"
 
-import type { Config } from "./Config"
-import type { LockEntry } from "./MadlibLock"
+import type { LockEntry } from "@model/MadlibLock"
+import type { Proxy } from "@model/Proxy"
 
 import Dictionary from "Dictionary"
 import { always } from "Function"
@@ -11,11 +11,11 @@ import { Just, Nothing, fromMaybe } from "Maybe"
 import String from "String"
 import { discardError } from "Wish"
 
-import Color from "./Color"
-import Constants from "./Constants"
-import MadlibDotJson from "./MadlibDotJson"
-import MadlibLock from "./MadlibLock"
-import Version from "./Version"
+import Color from "@model/Color"
+import Constants from "@model/Constants"
+import MadlibDotJson from "@model/MadlibDotJson"
+import MadlibLock from "@model/MadlibLock"
+import Version from "@model/Version"
 
 
 
@@ -83,17 +83,17 @@ renderWhyOutput = (mdj, lock, targetName) => {
   }
   IO.putLine("")
 }
-render :: Config -> String -> Wish {} {}
-export render = (config, targetName) => {
+render :: Proxy -> String -> Wish {} {}
+export render = (proxy, targetName) => {
   loadMdj = pipe(
     map(Just),
     discardError(always(Nothing)),
-  )(MadlibDotJson.load(config, "madlib.json"))
+  )(MadlibDotJson.load(proxy, "madlib.json"))
 
   loadLock = pipe(
     map(Just),
     discardError(always(Nothing)),
-  )(MadlibLock.load(config, Constants.LOCK_FILE_PATH))
+  )(MadlibLock.load(proxy, Constants.LOCK_FILE_PATH))
 
   return chain(
     (maybeMdj) => map(

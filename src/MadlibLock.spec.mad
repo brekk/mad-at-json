@@ -1,9 +1,5 @@
-import type { Config } from "./Config"
-
-import ByteArray from "ByteArray"
 import Dictionary from "Dictionary"
 import { always } from "Function"
-import { OK } from "Http"
 import IO from "IO"
 import List from "List"
 import { Just } from "Maybe"
@@ -11,7 +7,8 @@ import String from "String"
 import { ErrorWithMessage, assertEquals, test } from "Test"
 import { bad, bichain, good, mapRej } from "Wish"
 
-import { Exact, empty, load, normalizeDependencies, write } from "./MadlibLock"
+import { Exact, empty, load, normalizeDependencies, write } from "@model/MadlibLock"
+import { fakeProxy } from "@model/Proxy"
 
 
 
@@ -27,24 +24,6 @@ VALID_LOCK_JSON = `{
     }
   }
 }`
-baseConfig :: Config
-baseConfig = {
-  readFile: (_) => good(""),
-  writeFile: (_, _) => good({}),
-  writeBytes: (_, _) => good({}),
-  readDir: (_) => good([]),
-  createDir: (_, _) => good({}),
-  remove: (_, _) => good({}),
-  copy: (_, _, _) => good({}),
-  rename: (_, _) => good({}),
-  unzip: (_, _) => good({}),
-  exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
-  exists: (_) => good(true),
-  getBytes: (_) => good({ headers: [], status: OK, body: ByteArray.empty() }),
-  getBytesWithProgress: (_, _) => good({ headers: [], status: OK, body: ByteArray.empty() }),
-  isTTY: (_) => false,
-  now: (_) => 0,
-}
 test("empty - lockfileVersion is 2", (_) => assertEquals(empty.lockfileVersion, 2))
 test(
   "empty - packages dictionary is empty",
@@ -53,40 +32,40 @@ test(
 test(
   "load - parses lockfileVersion from valid JSON",
   (_) => {
-    config = { ...baseConfig, readFile: (_) => good(VALID_LOCK_JSON) }
+    proxy = { ...fakeProxy, readFile: (_) => good(VALID_LOCK_JSON) }
     return pipe(
       mapRej(always(ErrorWithMessage("load failed"))),
       chain((lock) => assertEquals(lock.lockfileVersion, 1)),
-    )(load(config, "./madlib.lock"))
+    )(load(proxy, "./madlib.lock"))
   },
 )
 test(
   "load - treats a v1 lock as having no saved resolutions",
   (_) => {
-    config = { ...baseConfig, readFile: (_) => good(VALID_LOCK_JSON) }
+    proxy = { ...fakeProxy, readFile: (_) => good(VALID_LOCK_JSON) }
     return pipe(
       mapRej(always(ErrorWithMessage("load failed"))),
       chain((lock) => assertEquals(Dictionary.length(lock.resolutions), 0)),
-    )(load(config, "./madlib.lock"))
+    )(load(proxy, "./madlib.lock"))
   },
 )
 test(
   "load - rejects malformed v2 resolutions instead of discarding them",
   (_) => {
     malformed = `{"lockfileVersion":2,"resolutions":{"study":{"strategy":"wrong","version":"1.0.0","url":"x"}},"packages":{}}`
-    config = { ...baseConfig, readFile: (_) => good(malformed) }
+    proxy = { ...fakeProxy, readFile: (_) => good(malformed) }
     return pipe(
       bichain(
         (_) => good({}),
         (_) => bad(ErrorWithMessage("expected malformed resolutions to fail")),
       ),
-    )(load(config, "./madlib.lock"))
+    )(load(proxy, "./madlib.lock"))
   },
 )
 test(
   "load - parses package entry from valid JSON",
   (_) => {
-    config = { ...baseConfig, readFile: (_) => good(VALID_LOCK_JSON) }
+    proxy = { ...fakeProxy, readFile: (_) => good(VALID_LOCK_JSON) }
     return pipe(
       mapRej(always(ErrorWithMessage("load failed"))),
       chain(
@@ -101,31 +80,31 @@ test(
           }),
         ),
       ),
-    )(load(config, "./madlib.lock"))
+    )(load(proxy, "./madlib.lock"))
   },
 )
 test(
   "load - fails when file is not found",
   (_) => {
-    config = { ...baseConfig, readFile: (_) => bad(IO.UnknownError) }
+    proxy = { ...fakeProxy, readFile: (_) => bad(IO.UnknownError) }
     return pipe(
       bichain(
         (err) => assertEquals(String.contains("not found", err), true),
         (_) => bad(ErrorWithMessage("expected load to fail but it succeeded")),
       ),
-    )(load(config, "./madlib.lock"))
+    )(load(proxy, "./madlib.lock"))
   },
 )
 test(
   "load - fails with diagnostic for malformed JSON",
   (_) => {
-    config = { ...baseConfig, readFile: (_) => good("not valid json at all") }
+    proxy = { ...fakeProxy, readFile: (_) => good("not valid json at all") }
     return pipe(
       bichain(
         (err) => assertEquals(String.contains("malformed", err), true),
         (_) => bad(ErrorWithMessage("expected load to fail but it succeeded")),
       ),
-    )(load(config, "./madlib.lock"))
+    )(load(proxy, "./madlib.lock"))
   },
 )
 test(
@@ -148,8 +127,8 @@ test(
         ],
       ]),
     }
-    config = {
-      ...baseConfig,
+    proxy = {
+      ...fakeProxy,
       writeFile: (_, content) => {
         written := content
         return good({})
@@ -158,15 +137,15 @@ test(
     return pipe(
       mapRej(always(ErrorWithMessage("write failed"))),
       chain((_) => assertEquals(String.contains(`"mypkg"`, written), true)),
-    )(write(config, "./madlib.lock", lock))
+    )(write(proxy, "./madlib.lock", lock))
   },
 )
 test(
   "write - serialized content includes lockfileVersion",
   (_) => {
     written = ""
-    config = {
-      ...baseConfig,
+    proxy = {
+      ...fakeProxy,
       writeFile: (_, content) => {
         written := content
         return good({})
@@ -175,7 +154,7 @@ test(
     return pipe(
       mapRej(always(ErrorWithMessage("write failed"))),
       chain((_) => assertEquals(String.contains(`"lockfileVersion"`, written), true)),
-    )(write(config, "./madlib.lock", empty))
+    )(write(proxy, "./madlib.lock", empty))
   },
 )
 test(
@@ -198,8 +177,8 @@ test(
         ],
       ]),
     }
-    config = {
-      ...baseConfig,
+    proxy = {
+      ...fakeProxy,
       readFile: (_) => good(stored),
       writeFile: (_, content) => {
         stored := content
@@ -208,18 +187,18 @@ test(
     }
     return pipe(
       mapRej(always("write failed")),
-      chain((_) => load(config, "./madlib.lock")),
+      chain((_) => load(proxy, "./madlib.lock")),
       mapRej(always(ErrorWithMessage("round-trip failed"))),
       chain((reloaded) => assertEquals(reloaded.lockfileVersion, 2)),
-    )(write(config, "./madlib.lock", lock))
+    )(write(proxy, "./madlib.lock", lock))
   },
 )
 test(
   "round-trip: exact resolutions retain strategy, version and URL",
   (_) => {
     stored = ""
-    config = {
-      ...baseConfig,
+    proxy = {
+      ...fakeProxy,
       writeFile: (_, content) => {
         stored := content
         return good({})
@@ -235,7 +214,7 @@ test(
     }
     return pipe(
       mapRej(always("write failed")),
-      chain((_) => load(config, "./madlib.lock")),
+      chain((_) => load(proxy, "./madlib.lock")),
       mapRej(always(ErrorWithMessage("resolution round-trip failed"))),
       chain(
         (reloaded) => assertEquals(
@@ -243,7 +222,7 @@ test(
           Just({ strategy: Exact, version: "0.0.6", url: "https://example.com/study.zip" }),
         ),
       ),
-    )(write(config, "./madlib.lock", lock))
+    )(write(proxy, "./madlib.lock", lock))
   },
 )
 // ---- normalizeDependencies ---------------------------------------------------
@@ -409,8 +388,8 @@ test(
       resolutions: Dictionary.empty,
       packages: Dictionary.fromList([#["https://example.com/roundtrip.zip", originalEntry]]),
     }
-    config = {
-      ...baseConfig,
+    proxy = {
+      ...fakeProxy,
       readFile: (_) => good(stored),
       writeFile: (_, content) => {
         stored := content
@@ -419,7 +398,7 @@ test(
     }
     return pipe(
       mapRej(always("write failed")),
-      chain((_) => load(config, "./madlib.lock")),
+      chain((_) => load(proxy, "./madlib.lock")),
       mapRej(always(ErrorWithMessage("round-trip failed"))),
       chain(
         (reloaded) => assertEquals(
@@ -427,6 +406,6 @@ test(
           Just(originalEntry),
         ),
       ),
-    )(write(config, "./madlib.lock", lock))
+    )(write(proxy, "./madlib.lock", lock))
   },
 )

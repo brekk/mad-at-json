@@ -5,7 +5,7 @@ import type { LockEntry } from "@model/MadlibLock"
 import type { MadlibLock } from "@model/MadlibLock"
 
 import Dict from "Dictionary"
-import { identity, ifElse, not } from "Function"
+import { complement, identity, ifElse, not } from "Function"
 import List from "List"
 import { Just, Nothing } from "Maybe"
 
@@ -50,14 +50,7 @@ export updateEntry = (name, versionInfo, context) => pipe(
 addInstalledPackage :: String -> Context -> Context
 export addInstalledPackage = (sanitizedUrl, context) => pipe(
   .installedPackages,
-  ifElse(
-    pipe(
-      List.includes(sanitizedUrl),
-      not,
-    ),
-    List.append(sanitizedUrl),
-    identity,
-  ),
+  ifElse(complement(List.includes(sanitizedUrl)), List.append(sanitizedUrl), identity),
   (installedPackages) => ({ ...context, installedPackages }),
 )(context)
 hasPackageBeenInstalled :: String -> Context -> Boolean

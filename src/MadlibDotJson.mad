@@ -3,7 +3,7 @@ import type { Value } from "Json/Value"
 import type { Maybe } from "Maybe"
 import type { Wish } from "Wish"
 
-import type { Config } from "./Config"
+import type { Proxy } from "@model/Proxy"
 
 import Dictionary from "Dictionary"
 import { Left, Right } from "Either"
@@ -13,9 +13,9 @@ import Print from "Json/Print"
 import { Just, Nothing } from "Maybe"
 import { bad, mapRej } from "Wish"
 
-import Dependency from "./Dependency"
-import Version from "./Version"
-import { FromVersion, UntilVersion } from "./Version"
+import Dependency from "@model/Dependency"
+import Version from "@model/Version"
+import { FromVersion, UntilVersion } from "@model/Version"
 
 
 
@@ -81,9 +81,9 @@ export parse = pipe(
       of(a)
   },
 )
-load :: Config -> String -> Wish String MadlibDotJson
-export load = (config, path) => pipe(
-  config.readFile,
+load :: Proxy -> String -> Wish String MadlibDotJson
+export load = (proxy, path) => pipe(
+  proxy.readFile,
   mapRej(always(`madlib.json file not found at path '${path}'`)),
   chain(parse),
   mapRej(

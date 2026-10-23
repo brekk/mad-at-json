@@ -1,9 +1,9 @@
 import type { Maybe } from "Maybe"
 import type { Wish } from "Wish"
 
-import type { Config } from "./Config"
-import type { MadlibDotJson } from "./MadlibDotJson"
-import type { LockEntry, MadlibLock, Resolution } from "./MadlibLock"
+import type { MadlibDotJson } from "@model/MadlibDotJson"
+import type { LockEntry, MadlibLock, Resolution } from "@model/MadlibLock"
+import type { Proxy } from "@model/Proxy"
 
 import { ge } from "Compare"
 import Dictionary from "Dictionary"
@@ -14,11 +14,11 @@ import { Just, Nothing, fromMaybe } from "Maybe"
 import Terminal from "Terminal"
 import { Wish, bad, mapRej } from "Wish"
 
-import Color from "./Color"
-import ConflictAnalysis from "./ConflictAnalysis"
-import MadlibLock from "./MadlibLock"
-import { Exact, LatestPatch } from "./MadlibLock"
-import Version from "./Version"
+import Color from "@model/Color"
+import ConflictAnalysis from "@model/ConflictAnalysis"
+import MadlibLock from "@model/MadlibLock"
+import { Exact, LatestPatch } from "@model/MadlibLock"
+import Version from "@model/Version"
 
 
 
@@ -117,12 +117,13 @@ latestPatchChoice = (choices) => where(parsedChoices(choices)) {
   _ =>
     Nothing
 }
-pickForConflict :: String
+pickForConflict :: Proxy
+  -> String
   -> Dictionary String LockEntry
   -> List String
   -> String
   -> Wish {} VersionChoice
-pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
+pickForConflict = (proxy, rootLabel, packages, rootDeps, conflictedName) => {
   choices = versionChoices(conflictedName, packages)
   options = map(
     (vc) => #[
@@ -155,17 +156,17 @@ pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
 
   render = () => {
     if (renderedLines > 0) {
-      IO.put(Terminal.moveCursorUp(renderedLines))
+      proxy.put(Terminal.moveCursorUp(renderedLines))
     } else do {
       return {}
     }
 
 
-    IO.put(Terminal.clearToEndOfScreen({}))
-    IO.putLine("")
-    IO.putLine(`  ${Color.yellow("!")} Conflict: ${Color.bold(conflictedName)}`)
-    IO.putLine("  Select the version to persist in madlib.lock:")
-    IO.putLine("")
+    proxy.put(Terminal.clearToEndOfScreen({}))
+    proxy.putLine("")
+    proxy.putLine(`  ${Color.yellow("!")} Conflict: ${Color.bold(conflictedName)}`)
+    proxy.putLine("  Select the version to persist in madlib.lock:")
+    proxy.putLine("")
     List.reduce(
       (idx, opt) => {
         #[choice, chains] = opt
@@ -173,9 +174,9 @@ pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
         marker = isSelected ? Color.bold(Color.green(">")) : " "
         version = choiceVersion(choice)
         versionStr = isSelected ? Color.bold(Color.green(version)) : version
-        IO.putLine(`    ${marker} ${versionStr}  ${choiceUrl(choice)}`)
+        proxy.putLine(`    ${marker} ${versionStr}  ${choiceUrl(choice)}`)
         List.forEach(
-          (path) => IO.putLine(
+          (path) => proxy.putLine(
             `        ${ConflictAnalysis.pathToChainString(packages, rootLabel, path)}`,
           ),
           chains,
@@ -185,8 +186,8 @@ pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
       0,
       options,
     )
-    IO.putLine("")
-    IO.putLine("  ↑/↓ navigate · Enter confirm · Ctrl-C cancel")
+    proxy.putLine("")
+    proxy.putLine("  ↑/↓ navigate · Enter confirm · Ctrl-C cancel")
     renderedLines := totalMenuLines
   }
 
@@ -274,7 +275,8 @@ staleResolution = (name, resolution, choices) => {
       ++ `Choose one with madlib install --resolve ${name}@VERSION`,
   )
 }
-resolveName :: Options
+resolveNameWithProxy :: Proxy
+  -> Options
   -> String
   -> List String
   -> Dictionary String LockEntry
@@ -282,7 +284,16 @@ resolveName :: Options
   -> MadlibLock
   -> String
   -> Wish String MadlibLock
-resolveName = (options, rootLabel, rootDeps, originalPackages, overrides, lock, name) => {
+resolveNameWithProxy = (
+  proxy,
+  options,
+  rootLabel,
+  rootDeps,
+  originalPackages,
+  overrides,
+  lock,
+  name
+) => {
   choices = versionChoices(name, originalPackages)
   return where(Dictionary.get(name, overrides)) {
     Just(requestedVersion) =>
@@ -341,9 +352,10 @@ resolveName = (options, rootLabel, rootDeps, originalPackages, overrides, lock, 
               }
               : options.interactive
                 ? pipe(
+                  pickForConflict(proxy, rootLabel, originalPackages, rootDeps),
                   mapRej(always("Conflict resolution was cancelled")),
                   map((choice) => applyChoice(name, Exact, choice, lock)),
-                )(pickForConflict(rootLabel, originalPackages, rootDeps, name))
+                )(name)
                 : bad(`Dependency conflict '${name}' requires an explicit resolution`)
       }
   }
@@ -367,7 +379,7 @@ printGuidance = (madlibDotJson, lock, message) => {
     ConflictAnalysis.findConflictedNames(lock.packages),
   )
 }
-run :: Config -> Options -> MadlibDotJson -> MadlibLock -> Wish String MadlibLock
+run :: Proxy -> Options -> MadlibDotJson -> MadlibLock -> Wish String MadlibLock
 export run = (config, options, madlibDotJson, lock) => {
   rootLabel = `${Color.bold(madlibDotJson.name)}@${Version.showVersion(madlibDotJson.version)}`
   rootDeps = pipe(
@@ -399,7 +411,7 @@ export run = (config, options, madlibDotJson, lock) => {
       }
       : pipe(
         List.reduceM(
-          resolveName(options, rootLabel, rootDeps, originalPackages, overrides),
+          resolveNameWithProxy(config, options, rootLabel, rootDeps, originalPackages, overrides),
           startingLock,
         ),
         map(MadlibLock.normalizeDependencies(originalPackages)),

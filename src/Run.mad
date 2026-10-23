@@ -1,7 +1,6 @@
 import type { Maybe } from "Maybe"
 import type { Wish } from "Wish"
 
-import type { Config } from "@model/Config"
 import type { Options } from "@model/ConflictResolver"
 import type { Context } from "@model/Context"
 import type { Dependency } from "@model/Dependency"
@@ -9,13 +8,15 @@ import type { DownloadResult } from "@model/Download"
 import type { MadlibDotJson } from "@model/MadlibDotJson"
 import type { LockEntry } from "@model/MadlibLock"
 import type { MadlibLock } from "@model/MadlibLock"
+import type { Proxy } from "@model/Proxy"
 import type { Reporter } from "@model/Reporter"
 import type { Validate, ValidationInput, ValidationOutput } from "@model/Validate"
 import type { VersionDotLock } from "@model/VersionDotLock"
 
 import { liftA3 } from "Applicative"
 import Dictionary from "Dictionary"
-import { always, identity, not } from "Function"
+import Fn from "Function"
+import { always, identity } from "Function"
 import IO from "IO"
 import List from "List"
 import { Just, Nothing, fromMaybe } from "Maybe"
@@ -58,19 +59,19 @@ pathing = (k) => pipe(
 )
 madpathFolder = pathing(Constants.MADLIB_MODULES_PATH)
 madtempFolder = pathing(Constants.TEMPORARY_MODULES_PATH)
-installNodeModules :: Config -> String -> Wish String String
-installNodeModules = (config, pkgName) => {
+installNodeModules :: Proxy -> String -> Wish String String
+installNodeModules = (proxy, pkgName) => {
   path = madpathFolder(pkgName)
   return pipe(
     mappend($, "package.json"),
-    config.exists,
+    proxy.exists,
     bichain(
       always(of("")),
       (_) => pipe(
         mapRej(.stderr),
         map(.stdout),
         map(IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`)),
-      )(config.exec("npm", ["install", path], Process.DEFAULT_COMMAND_OPTIONS)),
+      )(proxy.exec("npm", ["install", path], Process.DEFAULT_COMMAND_OPTIONS)),
     ),
   )(path)
 }
@@ -79,11 +80,11 @@ projectBaseUrl = pipe(
   .sanitizedUrl,
   mappend(Constants.TEMPORARY_MODULES_PATH),
 )
-readMadlibDotJson :: Config -> Dependency -> Wish {} (Validate MadlibDotJson)
-readMadlibDotJson = (config, dependency) => pipe(
+readMadlibDotJson :: Proxy -> Dependency -> Wish {} (Validate MadlibDotJson)
+readMadlibDotJson = (proxy, dependency) => pipe(
   projectBaseUrl,
   mappend($, "/madlib.json"),
-  MadlibDotJson.load(config),
+  MadlibDotJson.load(proxy),
   map(Valid),
   discardError(
     pipe(
@@ -92,11 +93,11 @@ readMadlibDotJson = (config, dependency) => pipe(
     ),
   ),
 )(dependency)
-readVersionDotLock :: Config -> Dependency -> Wish {} (Validate (Maybe VersionDotLock))
-readVersionDotLock = (config, dependency) => pipe(
+readVersionDotLock :: Proxy -> Dependency -> Wish {} (Validate (Maybe VersionDotLock))
+readVersionDotLock = (proxy, dependency) => pipe(
   projectBaseUrl,
   mappend($, "/version.lock"),
-  VersionDotLock.load(config),
+  VersionDotLock.load(proxy),
   map(
     pipe(
       Just,
@@ -105,9 +106,9 @@ readVersionDotLock = (config, dependency) => pipe(
   ),
   discardError(always(NotValid([VersionDotLockMissing], Nothing))),
 )(dependency)
-computeBuildHash :: Config -> Dependency -> Wish {} (Validate String)
-computeBuildHash = (config, dependency) => pipe(
-  (d) => config.exec(
+computeBuildHash :: Proxy -> Dependency -> Wish {} (Validate String)
+computeBuildHash = (proxy, dependency) => pipe(
+  (d) => proxy.exec(
     "madlib",
     ["package", "generate-hash", "-i", projectBaseUrl(d)],
     Process.DEFAULT_COMMAND_OPTIONS,
@@ -124,12 +125,12 @@ computeVersionHash = (versionDotLock, computedBuildHash, madlibDotJson) => (
     computedBuildHash,
   }
 )
-prepareValidationInput :: Config -> Dependency -> Wish {} (Validate ValidationInput)
-prepareValidationInput = (config, dependency) => pipe(
-  readVersionDotLock(config),
+prepareValidationInput :: Proxy -> Dependency -> Wish {} (Validate ValidationInput)
+prepareValidationInput = (proxy, dependency) => pipe(
+  readVersionDotLock(proxy),
   map(liftA3(computeVersionHash)),
-  ap($, computeBuildHash(config, dependency)),
-  ap($, readMadlibDotJson(config, dependency)),
+  ap($, computeBuildHash(proxy, dependency)),
+  ap($, readMadlibDotJson(proxy, dependency)),
 )(dependency)
 tryRecovery :: Validate a -> Validate a
 tryRecovery = (v) => where(v) {
@@ -164,6 +165,37 @@ runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
   ),
   andDo(of(passThrough)),
 )(madlibDotJson)
+postProcessSuccessPath = (prev, url, sanitizedUrl, v) => {
+  res = unsafeGetValidationValue(v)
+  { madlibDotJson, buildHash, versionHash } = res
+  { name, version, dependencies: deps } = madlibDotJson
+  lockEntry = {
+    name,
+    version: Version.showVersion(version),
+    buildHash,
+    versionHash,
+    dependencies: pipe(
+      fromMaybe([]),
+      map(.url),
+    )(deps),
+  }
+  return pipe(
+    (val) => (
+      {
+        ...val,
+        context: pipe(
+          .context,
+          addInstalledPackage(sanitizedUrl),
+          addLockEntry(url, lockEntry),
+        )(val),
+      }
+    ),
+    (val) => of(#[
+      val.context,
+      mappend(Tuple.snd(prev), fromMaybe([], val.madlibDotJson.dependencies)),
+    ]),
+  )(res)
+}
 postProcess :: #[Context, List Dependency]
   -> Dependency
   -> Validate ValidationOutput
@@ -173,37 +205,7 @@ postProcess = (prev, { sanitizedUrl, url }, validation) => where(validation) {
     of(prev)
 
   v =>
-    do {
-      res = unsafeGetValidationValue(v)
-      { madlibDotJson, buildHash, versionHash } = res
-      { name, version, dependencies: deps } = madlibDotJson
-      lockEntry = {
-        name,
-        version: Version.showVersion(version),
-        buildHash,
-        versionHash,
-        dependencies: pipe(
-          fromMaybe([]),
-          map(.url),
-        )(deps),
-      }
-      return pipe(
-        (val) => (
-          {
-            ...val,
-            context: pipe(
-              .context,
-              addInstalledPackage(sanitizedUrl),
-              addLockEntry(url, lockEntry),
-            )(val),
-          }
-        ),
-        (val) => of(#[
-          val.context,
-          mappend(Tuple.snd(prev), fromMaybe([], val.madlibDotJson.dependencies)),
-        ]),
-      )(res)
-    }
+    postProcessSuccessPath(prev, url, sanitizedUrl, v)
 }
 lookupSourceLockEntry :: Context -> Dependency -> Maybe LockEntry
 lookupSourceLockEntry = ({ sourceLockEntries: source }, { url: key }) => (
@@ -263,61 +265,60 @@ downloadedDependency = where {
   Downloaded(a, _) =>
     Just(a)
 }
-announceInvalid = (reporter, a, warnings) => List.forEach(
+announceInvalid = ({ reportedWarning }, { madlibDotJson: mj }, warnings) => List.forEach(
   pipe(
     warningMessage,
-    mappend(a.madlibDotJson.name ++ ": "),
-    reporter.reportedWarning,
+    mappend(mj.name ++ ": "),
+    reportedWarning,
   ),
   warnings,
 )
-processDependency :: Config
+tryRecovering = (reporter, validation) => {
+  where(validation) {
+    Valid(a) =>
+      reporter.installing(a.madlibDotJson.name)
+
+    NotValid(warnings, a) =>
+      do {
+        reporter.installing(a.madlibDotJson.name)
+        announceInvalid(reporter, a, warnings)
+      }
+
+    ValidationError(warnings, err, maybeA) =>
+      do {
+        where(maybeA) {
+          Just(a) =>
+            reporter.installing(a.madlibDotJson.name)
+
+          Nothing =>
+            {}
+        }
+        List.forEach(
+          pipe(
+            warningMessage,
+            reporter.reportedWarning,
+          ),
+          warnings,
+        )
+        reporter.failed(errorMessage(err))
+      }
+  }
+
+  return tryRecovery(validation)
+}
+processDependency :: Proxy
   -> Reporter
   -> #[Context, List Dependency]
   -> Dependency
   -> Wish {} #[Context, List Dependency]
-processDependency = (config, reporter, contextAndNextDeps, dependency) => pipe(
+processDependency = (proxy, reporter, contextAndNextDeps, dependency) => pipe(
   (d) => {
     reporter.validating(d.url)
     return d
   },
-  prepareValidationInput(config),
+  prepareValidationInput(proxy),
   map(chain(validate(Tuple.fst(contextAndNextDeps), dependency))),
-  map(
-    (validation) => {
-      where(validation) {
-        Valid(a) =>
-          reporter.installing(a.madlibDotJson.name)
-
-        NotValid(warnings, a) =>
-          do {
-            reporter.installing(a.madlibDotJson.name)
-            announceInvalid(reporter, a, warnings)
-          }
-
-        ValidationError(warnings, err, maybeA) =>
-          do {
-            where(maybeA) {
-              Just(a) =>
-                reporter.installing(a.madlibDotJson.name)
-
-              Nothing =>
-                {}
-            }
-            List.forEach(
-              pipe(
-                warningMessage,
-                reporter.reportedWarning,
-              ),
-              warnings,
-            )
-            reporter.failed(errorMessage(err))
-          }
-      }
-
-      return tryRecovery(validation)
-    },
-  ),
+  map(tryRecovering(reporter)),
   chain(
     (validation) => where(validation) {
       ValidationError(_, _, _) =>
@@ -329,19 +330,18 @@ processDependency = (config, reporter, contextAndNextDeps, dependency) => pipe(
   ),
 )(dependency)
 filterAlreadyInstalledDependencies :: Context -> List Dependency -> List Dependency
-filterAlreadyInstalledDependencies = (context, dependencies) => List.filter(
+filterAlreadyInstalledDependencies = (context, dependencies) => List.reject(
   pipe(
     .sanitizedUrl,
     hasPackageBeenInstalled($, context),
-    not,
   ),
 )(dependencies)
-processDependencies :: Config
+processDependencies :: Proxy
   -> Reporter
   -> Context
   -> List Dependency
   -> Wish {} #[Context, List Dependency]
-processDependencies = (config, reporter, context, dependencies) => {
+processDependencies = (proxy, reporter, context, dependencies) => {
   pending = filterAlreadyInstalledDependencies(context, dependencies)
   installed = List.filter(
     ({ sanitizedUrl }) => hasPackageBeenInstalled(sanitizedUrl, context),
@@ -355,13 +355,13 @@ processDependencies = (config, reporter, context, dependencies) => {
   return List.isEmpty(pending)
     ? List.isEmpty(installedChildren)
       ? of(#[contextWithInstalled, installedChildren])
-      : processDependencies(config, reporter, contextWithInstalled, installedChildren)
+      : processDependencies(proxy, reporter, contextWithInstalled, installedChildren)
     : pipe(
       map(
         (dependency) => {
           reporter.downloading(dependency.url)
           return pipe(
-            downloadIfNotCached(config, reporter.progress(dependency.url)),
+            downloadIfNotCached(proxy, reporter.progress(dependency.url)),
             map(
               (result) => {
                 where(result) {
@@ -389,7 +389,7 @@ processDependencies = (config, reporter, context, dependencies) => {
           ? bad({})
           : (
             chain(
-              List.reduceM(processDependency(config, reporter), #[contextWithInstalled, []]),
+              List.reduceM(processDependency(proxy, reporter), #[contextWithInstalled, []]),
               good(List.mapMaybe(downloadedDependency, results)),
             )
           ),
@@ -401,7 +401,7 @@ processDependencies = (config, reporter, context, dependencies) => {
 
           #[_context, nextDependencies] =>
             processDependencies(
-              config,
+              proxy,
               reporter,
               _context,
               mappend(nextDependencies, installedDependencyChildren(_context, installed)),
@@ -410,72 +410,79 @@ processDependencies = (config, reporter, context, dependencies) => {
       ),
     )(pending)
 }
-installedDependencyFolders :: Config -> Wish {} (List String)
-installedDependencyFolders = (config) => pipe(
-  config.readDir,
+installedDependencyFolders :: Proxy -> Wish {} (List String)
+installedDependencyFolders = (proxy) => pipe(
+  proxy.readDir,
   discardError(always([])),
 )(Constants.MADLIB_MODULES_PATH)
-sameLockName = (a, b) => a.name == b.name
-sameVersion = (a, b) => a.version == b.version
-sameBuildHash = (a, b) => a.buildHash == b.buildHash
-sameVersionHash = (a, b) => a.versionHash == b.versionHash
+// this is gross but we were trying to identify where the formatter was barfing on a `==`
+sameLockName = ({ name: x }, { name: y }) => Fn.equals(x, y)
+sameVersion = ({ version: x }, { version: y }) => Fn.equals(x, y)
+sameBuildHash = ({ buildHash: x }, { buildHash: y }) => Fn.equals(x, y)
+sameVersionHash = ({ versionHash: x }, { versionHash: y }) => Fn.equals(x, y)
 sameLockEntry :: LockEntry -> LockEntry -> Boolean
 sameLockEntry = (a, b) => (
   sameLockName(a, b) && sameVersion(a, b) && sameBuildHash(a, b) && sameVersionHash(a, b)
 )
-canReusePackage :: Config -> MadlibLock -> String -> LockEntry -> Wish {} Boolean
-canReusePackage = (config, previousLock, url, entry) => where(
+canReusePackage :: Proxy -> MadlibLock -> String -> LockEntry -> Wish {} Boolean
+canReusePackage = (proxy, previousLock, url, entry) => where(
   Dictionary.get(url, previousLock.packages)
 ) {
   Just(previous) =>
     sameLockEntry(previous, entry)
       ? pipe(
         map(
-          (installed) => (installed.name == entry.name)
-              && (Version.showVersion(installed.version) == entry.version),
+          ({ name, version }) => Fn.equals(name, entry.name)
+              && Fn.equals(Version.showVersion(version), entry.version),
         ),
         discardError(always(false)),
-      )(MadlibDotJson.load(config, `${Constants.MADLIB_MODULES_PATH}${entry.name}/madlib.json`))
+      )(MadlibDotJson.load(proxy, `${Constants.MADLIB_MODULES_PATH}${entry.name}/madlib.json`))
       : of(false)
 
   Nothing =>
     of(false)
 }
-swapStagedPackage :: Config -> String -> String -> String -> Wish {} {}
-swapStagedPackage = (config, destination, staging, backup) => pipe(
+swapStagedPackage :: Proxy -> String -> String -> String -> Wish {} {}
+swapStagedPackage = (proxy, destination, staging, backup) => pipe(
+  proxy.exists,
   discardError(always(false)),
   chain(
     (destinationExists) => !destinationExists
       ? pipe(
         mapRej(always({})),
-      )(config.rename(staging, destination))
+      )(proxy.rename(staging, destination))
       : do {
         _ <- pipe(
+          proxy.remove($, { recursive: true }),
           discardError(always({})),
-        )(config.remove(backup, { recursive: true }))
+        )(backup)
         _ <- pipe(
+          proxy.rename(destination),
           mapRej(always({})),
-        )(config.rename(destination, backup))
+        )(backup)
         _ <- pipe(
+          proxy.rename(staging),
           mapRej(always({})),
           chainRej(
             (err) => pipe(
+              proxy.rename(backup),
               discardError(always({})),
               andDo(bad(err)),
-            )(config.rename(backup, destination)),
+            )(destination),
           ),
-        )(config.rename(staging, destination))
+        )(destination)
         return pipe(
+          proxy.remove($, { recursive: true }),
           discardError(always({})),
-        )(config.remove(backup, { recursive: true }))
+        )(backup)
       },
   ),
-)(config.exists(destination))
-materializePackage :: Config -> MadlibLock -> #[String, LockEntry] -> Wish {} {}
-materializePackage = (config, previousLock, pair) => where(pair) {
+)(destination)
+materializePackage :: Proxy -> MadlibLock -> #[String, LockEntry] -> Wish {} {}
+materializePackage = (proxy, previousLock, pair) => where(pair) {
   #[url, entry] =>
     pipe(
-      canReusePackage(config, previousLock, url),
+      canReusePackage(proxy, previousLock, url),
       chain(
         (reuse) => reuse
           ? of({})
@@ -484,20 +491,21 @@ materializePackage = (config, previousLock, pair) => where(pair) {
             staging = madpathFolder(".madlib-stage")
             backup = madpathFolder(".madlib-backup")
             _ <- pipe(
+              proxy.remove($, { recursive: true }),
               discardError(always({})),
-            )(config.remove(staging, { recursive: true }))
+            )(staging)
             _ <- pipe(
               sanitizeUrl,
               madtempFolder,
-              config.copy($, staging, { recursive: true, overwrite: true, exclude: [] }),
+              proxy.copy($, staging, { recursive: true, overwrite: true, exclude: [] }),
               mapRej(always({})),
             )(url)
-            _ <- swapStagedPackage(config, destination, staging, backup)
+            _ <- swapStagedPackage(proxy, destination, staging, backup)
             madlibDotJson <- pipe(
               sanitizeUrl,
               madtempFolder,
               mappend($, "madlib.json"),
-              MadlibDotJson.load(config),
+              MadlibDotJson.load(proxy),
               mapRej(always({})),
             )(url)
             return runPostInstallHook(false, madlibDotJson, {})
@@ -505,36 +513,51 @@ materializePackage = (config, previousLock, pair) => where(pair) {
       ),
     )(entry)
 }
-materializeResolved :: Config -> MadlibLock -> MadlibDotJson -> MadlibLock -> Wish {} MadlibLock
-materializeResolved = (config, previousLock, rootMadlibDotJson, resolvedLock) => do {
+materializeResolved :: Proxy -> MadlibLock -> MadlibDotJson -> MadlibLock -> Wish {} MadlibLock
+materializeResolved = (proxy, previousLock, rootMadlibDotJson, resolvedLock) => do {
   _ <- List.reduceM(
-    (_, pair) => materializePackage(config, previousLock, pair),
+    (_, pair) => materializePackage(proxy, previousLock, pair),
     {},
     Dictionary.toList(resolvedLock.packages),
   )
-  folders <- installedDependencyFolders(config)
+  folders <- installedDependencyFolders(proxy)
   _ <- pipe(
-    map(installNodeModules(config)),
+    map(installNodeModules(proxy)),
     parallelN(4),
     mapRej(IO.putLineAndPass($, {})),
   )(folders)
   return runPostInstallHook(true, rootMadlibDotJson, resolvedLock)
 }
-installPackages :: Config
+resolveConflicts = (proxy, options, reporter, context, previousLock, madlibDotJson) => pipe(
+  .dependencies,
+  fromMaybe([]),
+  processDependencies(proxy, reporter, context),
+  chain(
+    where {
+      #[{ lockEntries: packages }, _] =>
+        pipe(
+          ConflictResolver.run(proxy, options, madlibDotJson),
+          mapRej(always({})),
+          chain(materializeResolved(proxy, previousLock, madlibDotJson)),
+        )({ lockfileVersion: 2, resolutions: previousLock.resolutions, packages })
+    },
+  ),
+)(madlibDotJson)
+installPackages :: Proxy
   -> Reporter
   -> Options
   -> MadlibLock
   -> Context
   -> String
   -> Wish {} MadlibLock
-installPackages = (config, reporter, options, previousLock, context, madlibDotJsonPath) => pipe(
-  config.readFile,
+installPackages = (proxy, reporter, options, previousLock, context, madlibDotJsonPath) => pipe(
+  proxy.readFile,
   mapRej(always(Constants.MADLIB_NOT_FOUND)),
   chain(
     (content) => pipe(
       mapRej(always(Constants.MADLIB_NOT_FOUND)),
       andDo(of(content)),
-    )(config.createDir(Constants.MADLIB_MODULES_PATH, { recursive: true })),
+    )(proxy.createDir(Constants.MADLIB_MODULES_PATH, { recursive: true })),
   ),
   discardError(identity),
   chain(
@@ -545,25 +568,7 @@ installPackages = (config, reporter, options, previousLock, context, madlibDotJs
           IO.putLine,
           always(of(previousLock)),
         ),
-        (madlibDotJson) => pipe(
-          .dependencies,
-          fromMaybe([]),
-          processDependencies(config, reporter, context),
-          chain(
-            where {
-              #[finalContext, _] =>
-                pipe(
-                  ConflictResolver.run(config, options, madlibDotJson),
-                  mapRej(always({})),
-                  chain(materializeResolved(config, previousLock, madlibDotJson)),
-                )({
-                  lockfileVersion: 2,
-                  resolutions: previousLock.resolutions,
-                  packages: finalContext.lockEntries,
-                })
-            },
-          ),
-        )(madlibDotJson),
+        resolveConflicts(proxy, options, reporter, context, previousLock),
       ),
     ),
   ),
@@ -573,45 +578,45 @@ installPackages = (config, reporter, options, previousLock, context, madlibDotJs
  * as well as reading and saving the content of the package.json file in-memory
  * in order to restore it at it end
  */
-prepare :: Config -> String -> Wish String String
-prepare = (config, packageDotJsonPath) => pipe(
+prepare :: Proxy -> String -> Wish String String
+prepare = (proxy, packageDotJsonPath) => pipe(
   always(
-    mapRej(always(""), config.createDir(Constants.TEMPORARY_MODULES_PATH, { recursive: true })),
+    mapRej(always(""), proxy.createDir(Constants.TEMPORARY_MODULES_PATH, { recursive: true })),
   ),
   andDo(of(packageDotJsonPath)),
   chain(
     pipe(
-      config.exists,
+      proxy.exists,
       mapRej(always("")),
       map(always(packageDotJsonPath)),
     ),
   ),
   chain(
     (path) => pipe(
-      config.exec($, ["i"], Process.DEFAULT_COMMAND_OPTIONS),
+      proxy.exec("npm", $, Process.DEFAULT_COMMAND_OPTIONS),
       mapRej(.stderr),
       andDo(of(path)),
-    )("npm"),
+    )(["i"]),
   ),
   chain(
     pipe(
-      config.readFile,
+      proxy.readFile,
       mapRej(always("")),
     ),
   ),
 )(packageDotJsonPath)
-restorePackageDotJson :: Config -> String -> Wish {} {}
-restorePackageDotJson = (config, content) => pipe(
-  config.writeFile("package.json"),
+restorePackageDotJson :: Proxy -> String -> Wish {} {}
+restorePackageDotJson = (proxy, content) => pipe(
+  proxy.writeFile("package.json"),
   mapRej(always({})),
 )(content)
-writeLockFile :: Config -> MadlibLock -> Wish {} {}
-writeLockFile = (config, lock) => {
+writeLockFile :: Proxy -> MadlibLock -> Wish {} {}
+writeLockFile = (proxy, lock) => {
   temporaryPath = `${Constants.LOCK_FILE_PATH}.tmp`
   return pipe(
-    chain((_) => config.rename(temporaryPath, Constants.LOCK_FILE_PATH)),
+    chain((_) => proxy.rename(temporaryPath, Constants.LOCK_FILE_PATH)),
     mapRej((err) => IO.putLineAndPass(`Failed to write lock file: ${show(err)}`, {})),
-  )(MadlibLock.write(config, temporaryPath, lock))
+  )(MadlibLock.write(proxy, temporaryPath, lock))
 }
 // Build a minimal Dependency for prefetch-only use (versionRange is unused by download logic).
 makePrefetchDep :: String -> Dependency
@@ -628,10 +633,10 @@ makePrefetchDep = (url) => (
 // and global caches are warm before the main install loop starts.  This turns
 // depth-sequential network round-trips into a single parallel fan-out for any
 // graph already captured in the lock (e.g. CI with a committed lock file).
-prefetchFromLock :: Config -> MadlibLock.MadlibLock -> Wish {} {}
-prefetchFromLock = (config, lock) => pipe(
+prefetchFromLock :: Proxy -> MadlibLock.MadlibLock -> Wish {} {}
+prefetchFromLock = (proxy, lock) => pipe(
   Dictionary.keys,
-  map((url) => andDo(of({}), downloadIfNotCached(config, (_, _) => {}, makePrefetchDep(url)))),
+  map((url) => andDo(of({}), downloadIfNotCached(proxy, (_, _) => {}, makePrefetchDep(url)))),
   parallelN(16),
   map(always({})),
 )(lock.packages)
@@ -640,8 +645,8 @@ prefetchFromLock = (config, lock) => pipe(
 // Packages found on disk are marked as installed so the main loop skips
 // them (delta install). The previous lock is kept as the source graph so
 // already-installed packages can still contribute their transitive deps.
-buildDeltaContext :: Config -> MadlibLock.MadlibLock -> Wish {} Context
-buildDeltaContext = (config, lock) => pipe(
+buildDeltaContext :: Proxy -> MadlibLock.MadlibLock -> Wish {} Context
+buildDeltaContext = (proxy, { packages }) => pipe(
   Dictionary.toList,
   map(
     (pair) => where(pair) {
@@ -649,7 +654,7 @@ buildDeltaContext = (config, lock) => pipe(
         pipe(
           madpathFolder,
           mappend($, "madlib.json"),
-          config.exists,
+          proxy.exists,
           map((_) => Just(sanitizeUrl(url))),
           discardError(always(Nothing)),
         )(entry.name)
@@ -662,56 +667,71 @@ buildDeltaContext = (config, lock) => pipe(
         versions: Dictionary.empty,
         installedPackages: List.mapMaybe(identity, results),
         lockEntries: Dictionary.empty,
-        sourceLockEntries: lock.packages,
+        sourceLockEntries: packages,
       }
     ),
   ),
-)(lock.packages)
-run :: Options -> Config -> Wish {} {}
-export run = (options, config) => {
-  reporter = Reporter.make(config.isTTY({}), config.now({}))
+)(packages)
+restore = (install, restorePkg) => bichain(
+  pipe(
+    always("madlib.json"),
+    install,
+    mapRej(IO.trace("it failed!")),
+  ),
+  (pkgJson) => pipe(
+    install,
+    chain(
+      pipe(
+        of,
+        andDo($, restorePkg(pkgJson)),
+      ),
+    ),
+    chainRej(
+      pipe(
+        bad,
+        andDo($, restorePkg(pkgJson)),
+      ),
+    ),
+  )("madlib.json"),
+)
+run :: Options -> Proxy -> Wish {} {}
+export run = (options, proxy) => {
+  reporter = Reporter.make(proxy.isTTY({}), proxy.now({}))
   reporter.start({})
 
   return pipe(
     discardError(always(MadlibLock.empty)),
     chain(
       (lock) => chain(
-        (_) => map((ctx) => #[lock, ctx], buildDeltaContext(config, lock)),
-        prefetchFromLock(config, lock),
+        (_) => map((ctx) => #[lock, ctx], buildDeltaContext(proxy, lock)),
+        prefetchFromLock(proxy, lock),
       ),
     ),
     chain(
-      (lockAndContext) => where(lockAndContext) {
+      where {
         #[lock, ctx] =>
-          pipe(
-            prepare(config),
-            bichain(
-              pipe(
-                always("madlib.json"),
-                installPackages(config, reporter, options, lock, ctx),
-                mapRej(IO.trace("it failed!")),
+          do {
+            install = installPackages(proxy, reporter, options, lock, ctx)
+            restorePkg = restorePackageDotJson(proxy)
+            return pipe(
+              prepare(proxy),
+              restore(install, restorePkg),
+              chain(
+                (finalLock) => {
+                  reporter.complete({})
+                  return writeLockFile(proxy, finalLock)
+                },
               ),
-              (pkgJson) => pipe(
-                installPackages(config, reporter, options, lock, ctx),
-                chain((finalLock) => andDo(of(finalLock), restorePackageDotJson(config, pkgJson))),
-                chainRej((x) => andDo(bad(x), restorePackageDotJson(config, pkgJson))),
-              )("madlib.json"),
-            ),
-            chain(
-              (finalLock) => {
-                reporter.complete({})
-                return writeLockFile(config, finalLock)
-              },
-            ),
-            chainRej(
-              (x) => {
-                reporter.complete({})
-                return bad(x)
-              },
-            ),
-            andDo(of({})),
-          )("package.json")
+              chainRej(
+                (x) => {
+                  reporter.complete({})
+                  return bad(x)
+                },
+              ),
+              andDo(of({})),
+            )("package.json")
+          }
       },
     ),
-  )(MadlibLock.load(config, Constants.LOCK_FILE_PATH))
+  )(MadlibLock.load(proxy, Constants.LOCK_FILE_PATH))
 }
