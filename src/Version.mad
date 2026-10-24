@@ -23,7 +23,7 @@ instance Json Version {
   )
 }
 parseJsonVersion :: J.Parser Version
-parseJsonVersion = chain(
+export parseJsonVersion = chain(
   pipe(
     parse,
     where {
@@ -31,7 +31,7 @@ parseJsonVersion = chain(
         J.succeed(v)
 
       _ =>
-        J.fail(`Invalid Version`)
+        J.fail("Invalid Version")
     },
   ),
   J.string,
@@ -162,6 +162,7 @@ export intersectRanges = (range1, range2) => where(#[range1, range2]) {
   #[range, AnyVersion] =>
     range
 }
+/*
 MIN_VERSION = `"minVersion": `
 _minV = pipe(
   showVersion,
@@ -171,6 +172,7 @@ _maxV = pipe(
   showVersion,
   mappend(`"maxVersion": `),
 )
+/*
 printRange :: VersionRange -> String
 export printRange = where {
   VersionRange(minV, maxV) =>
@@ -186,6 +188,7 @@ export printRange = where {
   _ =>
     MIN_VERSION ++ "*"
 }
+*/
 shove = pipe(
   showVersion,
   P.string,
