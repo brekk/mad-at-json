@@ -1,0 +1,60 @@
+import { Left, Right } from "Either"
+import {} from "Json"
+import Parse from "Json/Parse"
+import { Just, Nothing } from "Maybe"
+import Wish from "Wish"
+
+import Study from "Study"
+
+import D from "@model/Dependency"
+import V from "@model/Version"
+
+
+
+Study.report(
+  Parse.parse(D.dependencyParser),
+  "fromJson",
+  [
+    #[`{}`, Left("Error parsing fieldname 'url'")],
+    #[
+      `{"url": "https://whatever/cool.zip" }`,
+      Right({
+        description: Nothing,
+        name: Nothing,
+        sanitizedUrl: "u_bef9c668b137c267f593d2785273c96a",
+        url: "https://whatever/cool.zip",
+        versionRange: V.AnyVersion,
+      }),
+    ],
+    #[
+      `{"url": "https://whatever/cool.zip", "description": "whatever" }`,
+      Right({
+        description: Just("whatever"),
+        name: Nothing,
+        sanitizedUrl: "u_bef9c668b137c267f593d2785273c96a",
+        url: "https://whatever/cool.zip",
+        versionRange: V.AnyVersion,
+      }),
+    ],
+    #[
+      `{"url": "https://whatever/cool.zip", "description": "whatever", "name": "whatever" }`,
+      Right({
+        description: Just("whatever"),
+        name: Just("whatever"),
+        sanitizedUrl: "u_bef9c668b137c267f593d2785273c96a",
+        url: "https://whatever/cool.zip",
+        versionRange: V.AnyVersion,
+      }),
+    ],
+    #[
+      `{"url": "https://whatever/cool.zip", "description": "whatever", "name": "whatever", "minVersion": "1.0.0" }`,
+      Right({
+        description: Just("whatever"),
+        name: Just("whatever"),
+        sanitizedUrl: "u_bef9c668b137c267f593d2785273c96a",
+        url: "https://whatever/cool.zip",
+        versionRange: V.FromVersion(V.Version(1, 0, 0)),
+      }),
+    ],
+  ],
+)

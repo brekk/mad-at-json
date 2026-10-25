@@ -52,13 +52,13 @@ versionField = (key) => pipe(
 export dependencyParser = J.map5(
   construct,
   J.field("url", J.string),
-  J.field("description", J.maybe(J.string)),
+  J.maybe(J.field("description", J.string)),
   versionField("minVersion"),
   versionField("maxVersion"),
-  J.field("name", J.maybe(J.string)),
+  J.maybe(J.field("name", J.string)),
 )
 dependenciesParser :: J.Parser (Maybe (List Dependency))
-export dependenciesParser = J.field("dependencies", J.maybe(J.list(dependencyParser)))
+export dependenciesParser = J.maybe(J.field("dependencies", J.list(dependencyParser)))
 export createWithName = (name, url) => (
   {
     url,

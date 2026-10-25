@@ -1,6 +1,6 @@
-import type { MadlibDotJson } from "./MadlibDotJson"
 import type { LockEntry } from "./MadlibLock"
 import type { MadlibLock } from "./MadlibLock"
+import type { MadlibDotJson } from "@model/MadlibDotJson"
 
 import Dictionary from "Dictionary"
 import IO from "IO"
