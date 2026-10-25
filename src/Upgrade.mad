@@ -101,7 +101,7 @@ buildCandidates = (proxy, lock) => pipe(
 )(lock.packages)
 filterRootCandidates :: Proxy -> List UpgradeCandidate -> Wish {} (List UpgradeCandidate)
 filterRootCandidates = (proxy, candidates) => pipe(
-  MadlibDotJson.load(proxy),
+  MadlibDotJson.loadWithProxy(proxy),
   map(
     (mdj) => {
       rootUrls = pipe(
@@ -266,7 +266,7 @@ selectAll = (candidates) => {
 applyUpgrades :: Proxy -> List UpgradeCandidate -> Wish {} {}
 export applyUpgrades = (proxy, selected) => {
   updateJson = pipe(
-    MadlibDotJson.load(proxy),
+    MadlibDotJson.loadWithProxy(proxy),
     mapRej(always({})),
     map(
       (mdj) => (

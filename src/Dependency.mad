@@ -1,50 +1,71 @@
 import type { Maybe } from "Maybe"
 
-import type { VersionRange } from "./Version"
+import type { VersionRange } from "@model/Version"
 
 import J from "Json/Parse"
+import P from "Json/Print"
+import { Just } from "Maybe"
 import { Nothing } from "Maybe"
 import {} from "Wish"
 
-import { sanitizeUrl } from "./URL"
-import Version from "./Version"
+import Log from "@model/Log"
+import { sanitizeUrl } from "@model/URL"
+import Version from "@model/Version"
 
 
 
 export alias Dependency = {
   description :: Maybe String,
-  name :: Maybe String,
+  name :: String,
   sanitizedUrl :: String,
   url :: String,
   versionRange :: VersionRange,
 }
-dependencyParser :: J.Parser (List Dependency)
-export dependencyParser = J.field(
-  "dependencies",
-  J.list(
-    J.map4(
-      (url, description, maybeMinVersion, maybeMaxVersion) => (
-        {
-          url,
-          description,
-          versionRange: Version.createRange(maybeMinVersion, maybeMaxVersion),
-          name: Nothing,
-          sanitizedUrl: sanitizeUrl(url),
-        }
-      ),
-      J.field("url", J.string),
-      J.maybe(J.field("description", J.string)),
-      J.map1(chain(Version.parse), J.maybe(J.field("minVersion", J.string))),
-      J.map1(chain(Version.parse), J.maybe(J.field("maxVersion", J.string))),
-    ),
-  ),
+instance Json Dependency {
+  fromJson = dependencyParser
+
+  toJson = ({ description, name, sanitizedUrl, url, versionRange }) => P.object([
+    #["description", P.string(description ?? "")],
+    #["name", P.string(name)],
+    #["url", P.string(url)],
+    ...Version.toJsonPairs(versionRange),
+  ])
+}
+// dap up your deps
+export construct = (url, description, maybeMinVersion, maybeMaxVersion, name) => Log
+  .env
+  .parseDependency(
+    "constructing",
+    {
+      url,
+      description,
+      versionRange: Version.createRange(maybeMinVersion, maybeMaxVersion),
+      name,
+      sanitizedUrl: sanitizeUrl(url),
+    },
+  )
+versionField = (key) => pipe(
+  J.field($, J.string),
+  J.maybe,
+  J.map1(chain(Version.parse)),
+)(key)
+export dependencyParser = J.map5(
+  construct,
+  J.field("url", J.string),
+  J.field("description", J.maybe(J.string)),
+  versionField("minVersion"),
+  versionField("maxVersion"),
+  J.field("name", J.string),
 )
-export create = (url) => (
+dependenciesParser :: J.Parser (Maybe (List Dependency))
+export dependenciesParser = J.field("dependencies", J.maybe(J.list(dependencyParser)))
+export createWithName = (name, url) => (
   {
     url,
     sanitizedUrl: sanitizeUrl(url),
     versionRange: Version.AnyVersion,
     description: Nothing,
-    name: Nothing,
+    name,
   }
 )
+export create = (url) => createWithName(url, url)

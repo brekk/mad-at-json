@@ -1,7 +1,7 @@
 import { Just, Nothing } from "Maybe"
 import { assertEquals, test } from "Test"
 
-import { initialContext, updateEntry } from "./Context"
+import { initialContext, updateEntry } from "@model/Context"
 import {
   InvalidBuildHash,
   InvalidVersionHash,
@@ -12,8 +12,8 @@ import {
   ValidationError,
   combine,
   validate,
-} from "./Validate"
-import { AnyVersion, FromVersion, Version } from "./Version"
+} from "@model/Validate"
+import { AnyVersion, FromVersion, Version } from "@model/Version"
 
 
 
@@ -32,7 +32,7 @@ DEFAULT_DEPENDENCY = {
   url: "http://url.tld",
   sanitizedUrl: "http___url_tld",
   versionRange: AnyVersion,
-  name: Nothing,
+  name: "test-module",
 }
 DEFAULT_INPUT = {
   madlibDotJson: MADLIBDOTJSON,
@@ -50,7 +50,7 @@ test(
         initialContext,
       ),
       shouldCopy: true,
-      dependency: { ...DEFAULT_DEPENDENCY, name: Just("package-name") },
+      dependency: { ...DEFAULT_DEPENDENCY, name: "package-name" },
       madlibDotJson: MADLIBDOTJSON,
       buildHash: "",
       versionHash: "",
@@ -75,7 +75,7 @@ test(
         shouldCopy: true,
         dependency: {
           ...DEFAULT_DEPENDENCY,
-          name: Just("package-name"),
+          name: "package-name",
           versionRange: FromVersion(Version(2, 0, 0)),
         },
         madlibDotJson: MADLIBDOTJSON,

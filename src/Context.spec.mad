@@ -8,8 +8,8 @@ import {
   hasPackageBeenInstalled,
   initialContext,
   updateEntry,
-} from "./Context"
-import { AnyVersion, Version, VersionRange } from "./Version"
+} from "@model/Context"
+import { AnyVersion, Version, VersionRange } from "@model/Version"
 
 
 

@@ -5,11 +5,11 @@ import { Just, Nothing } from "Maybe"
 import { ErrorWithMessage, assertEquals, test } from "Test"
 import { bad, bichain, good } from "Wish"
 
-import { load, parse } from "./MadlibDotJson"
-import { sanitizeUrl } from "./URL"
-import { AnyVersion } from "./Version"
-import { Version } from "./Version"
+import { loadWithProxy, parse } from "@model/MadlibDotJson"
 import { fakeProxy } from "@model/Proxy"
+import { sanitizeUrl } from "@model/URL"
+import { AnyVersion } from "@model/Version"
+import { Version } from "@model/Version"
 
 
 
@@ -66,7 +66,7 @@ test(
               url: "https://example.com/pkg.zip",
               sanitizedUrl: sanitizeUrl("https://example.com/pkg.zip"),
               versionRange: AnyVersion,
-              name: Nothing,
+              name: "packaaaaage",
             },
           ]),
           hooks: Nothing,
@@ -112,7 +112,7 @@ test(
     }
 
     return pipe(
-      load(config),
+      loadWithProxy(config),
       bichain(
         always(bad(ErrorWithMessage("Parsing should be success!"))),
         assertEquals($, expected),

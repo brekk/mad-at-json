@@ -4,8 +4,8 @@ import { always } from "Function"
 import { ErrorWithMessage, assertEquals, test } from "Test"
 import { bad, bichain, good } from "Wish"
 
-import { load, parse } from "./VersionDotLock"
 import { fakeProxy } from "@model/Proxy"
+import { loadWithProxy, parse } from "@model/VersionDotLock"
 
 
 
@@ -154,7 +154,7 @@ test(
     }
 
     return pipe(
-      load(DEFAULT_CONFIG),
+      loadWithProxy(DEFAULT_CONFIG),
       bichain(always(bad(ErrorWithMessage("Parse should be success"))), assertEquals($, expected)),
     )("version.lock")
   },

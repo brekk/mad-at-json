@@ -2,7 +2,7 @@ import Dictionary from "Dictionary"
 import List from "List"
 import { assertEquals, test } from "Test"
 
-import { findPaths } from "./Why"
+import { findPaths } from "@model/Why"
 
 
 

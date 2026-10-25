@@ -1,7 +1,7 @@
 import String from "String"
 import { assertEquals, test } from "Test"
 
-import { sanitizeUrl } from "./URL"
+import { sanitizeUrl } from "@model/URL"
 
 
 

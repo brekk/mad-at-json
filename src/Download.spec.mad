@@ -6,6 +6,7 @@ import String from "String"
 import { ErrorWithMessage, assertEquals, test } from "Test"
 import { bad, good, mapRej } from "Wish"
 
+import Dependency from "@model/Dependency"
 import { downloadIfNotCached } from "@model/Download"
 import {
   DownloadError,
@@ -20,16 +21,6 @@ import { AnyVersion } from "@model/Version"
 
 
 
-dependency :: String -> Dependency
-dependency = (url) => (
-  {
-    description: Nothing,
-    url,
-    sanitizedUrl: sanitizeUrl(url),
-    versionRange: AnyVersion,
-    name: Nothing,
-  }
-)
 resultLabel = where {
   Downloaded(_, FromCache) =>
     "cache"
@@ -45,7 +36,7 @@ fakeProxy = { ...Proxy.fakeProxy, readFile: (_) => good(""), exists: localExists
 test(
   "downloadIfNotCached - valid cache is reused",
   (_) => {
-    dep = dependency("http://repo.com/test-package.zip")
+    dep = Dependency.create("http://repo.com/test-package.zip")
 
     return pipe(
       map(resultLabel),
@@ -57,7 +48,7 @@ test(
 test(
   "downloadIfNotCached - zip with package at archive root is normalized",
   (_) => {
-    dep = dependency("http://repo.com/root-package.zip")
+    dep = Dependency.create("http://repo.com/root-package.zip")
     cacheReady = false
 
     config = {
@@ -87,7 +78,7 @@ test(
 test(
   "downloadIfNotCached - zip with one top-level package directory is normalized",
   (_) => {
-    dep = dependency("http://repo.com/folder-package.zip")
+    dep = Dependency.create("http://repo.com/folder-package.zip")
     cacheReady = false
 
     config = {
@@ -118,7 +109,7 @@ test(
 test(
   "downloadIfNotCached - malformed zip shape returns diagnostic",
   (_) => {
-    dep = dependency("http://repo.com/bad-package.zip")
+    dep = Dependency.create("http://repo.com/bad-package.zip")
 
     config = {
       ...fakeProxy,

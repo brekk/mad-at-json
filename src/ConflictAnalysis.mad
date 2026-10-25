@@ -8,8 +8,8 @@ import List from "List"
 import { Just, Nothing, fromMaybe } from "Maybe"
 import String from "String"
 
-import Color from "./Color"
-import Version from "./Version"
+import Color from "@model/Color"
+import Version from "@model/Version"
 
 
 

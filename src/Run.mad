@@ -84,7 +84,7 @@ readMadlibDotJson :: Proxy -> Dependency -> Wish {} (Validate MadlibDotJson)
 readMadlibDotJson = (proxy, dependency) => pipe(
   projectBaseUrl,
   mappend($, "/madlib.json"),
-  MadlibDotJson.load(proxy),
+  MadlibDotJson.loadWithProxy(proxy),
   map(Valid),
   discardError(
     pipe(
@@ -97,7 +97,7 @@ readVersionDotLock :: Proxy -> Dependency -> Wish {} (Validate (Maybe VersionDot
 readVersionDotLock = (proxy, dependency) => pipe(
   projectBaseUrl,
   mappend($, "/version.lock"),
-  VersionDotLock.load(proxy),
+  VersionDotLock.loadWithProxy(proxy),
   map(
     pipe(
       Just,
@@ -436,7 +436,12 @@ canReusePackage = (proxy, previousLock, url, entry) => where(
               && Fn.equals(Version.showVersion(version), entry.version),
         ),
         discardError(always(false)),
-      )(MadlibDotJson.load(proxy, `${Constants.MADLIB_MODULES_PATH}${entry.name}/madlib.json`))
+      )(
+        MadlibDotJson.loadWithProxy(
+          proxy,
+          `${Constants.MADLIB_MODULES_PATH}${entry.name}/madlib.json`,
+        ),
+      )
       : of(false)
 
   Nothing =>
@@ -505,7 +510,7 @@ materializePackage = (proxy, previousLock, pair) => where(pair) {
               sanitizeUrl,
               madtempFolder,
               mappend($, "madlib.json"),
-              MadlibDotJson.load(proxy),
+              MadlibDotJson.loadWithProxy(proxy),
               mapRej(always({})),
             )(url)
             return runPostInstallHook(false, madlibDotJson, {})
@@ -621,13 +626,7 @@ writeLockFile = (proxy, lock) => {
 // Build a minimal Dependency for prefetch-only use (versionRange is unused by download logic).
 makePrefetchDep :: String -> Dependency
 makePrefetchDep = (url) => (
-  {
-    url,
-    sanitizedUrl: sanitizeUrl(url),
-    versionRange: AnyVersion,
-    description: Nothing,
-    name: Nothing,
-  }
+  { url, sanitizedUrl: sanitizeUrl(url), versionRange: AnyVersion, description: Nothing, name: url }
 )
 // Pre-download every package in the lock file in parallel so the project-local
 // and global caches are warm before the main install loop starts.  This turns

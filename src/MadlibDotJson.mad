@@ -130,9 +130,9 @@ export parse = pipe(
       of(a)
   },
 )
-load :: String -> Wish String MadlibDotJson
-export load = (path) => pipe(
-  File.read,
+loadWithProxy :: Proxy -> String -> Wish String MadlibDotJson
+export loadWithProxy = (proxy, path) => pipe(
+  proxy.readFile,
   mapRej(always(`madlib.json file not found at path '${path}'`)),
   chain(parse),
   mapRej(
@@ -147,77 +147,15 @@ export writeWithWidth = (width, jj) => pipe(
   P.printJson(width),
 )(jj)
 export write = writeWithWidth(80)
-makeMadlibDotJson :: String
-  -> String
-  -> Maybe String
-  -> Maybe (List Dependency)
-  -> String
-  -> Maybe String
-  -> Maybe (Dictionary String String)
-  -> Maybe (Dictionary String String)
-  -> J.Parser MadlibDotJson
-makeMadlibDotJson = (
-  name,
-  version,
-  madlibVersion,
-  dependencies,
-  main,
-  bin,
-  importAliases,
-  hooks
-) => where(Version.parse(version)) {
-  Just(v) =>
-    J.succeed({ name, version: v, madlibVersion, dependencies, main, bin, importAliases, hooks })
-
-  Nothing =>
-    J.fail(
-      `The version in the madlib.json file is not valid, you provided '${
-        version
-      }', but it should have the form x.y.z where x, y and z are numbers.`,
-    )
-}
-parser :: J.Parser MadlibDotJson
-parser = J.chain8(
-  makeMadlibDotJson,
-  J.field("name", J.string),
-  J.field("version", J.string),
-  J.maybe(J.field("madlibVersion", J.string)),
-  J.maybe(Dependency.dependencyParser),
-  J.field("main", J.string),
-  J.maybe(J.field("bin", J.string)),
-  J.maybe(J.field("importAliases", J.dict(J.string))),
-  J.maybe(J.field("hooks", J.dict(J.string))),
-)
-parse :: String -> Wish String MadlibDotJson
-export parse = pipe(
-  J.parse(parser),
-  where {
-    Left(e) =>
-      bad(e)
-
-    Right(a) =>
-      of(a)
-  },
-)
-load :: Proxy -> String -> Wish String MadlibDotJson
-export load = (proxy, path) => pipe(
-  proxy.readFile,
-  mapRej(always(`madlib.json file not found at path '${path}'`)),
-  chain(parse),
-  mapRej(
-    (e) => `madlib.json file at path '${path}' is malformed
-Error: ${e}`,
-  ),
-)(path)
 // ---- Serialization ----------------------------------------------------------
 
 serializeDependency :: Dependency -> Value
 serializeDependency = (dep) => {
-  base = [#["url", Print.string(dep.url)]]
+  base = [#["url", P.string(dep.url)]]
 
   withDesc = where(dep.description) {
     Just(desc) =>
-      [...base, #["description", Print.string(desc)]]
+      [...base, #["description", P.string(desc)]]
 
     Nothing =>
       base
@@ -225,10 +163,10 @@ serializeDependency = (dep) => {
 
   withMin = where(dep.versionRange) {
     Version.VersionRange(minV, _) =>
-      [...withDesc, #["minVersion", Print.string(Version.showVersion(minV))]]
+      [...withDesc, #["minVersion", P.string(Version.showVersion(minV))]]
 
-    FromVersion(minV) =>
-      [...withDesc, #["minVersion", Print.string(Version.showVersion(minV))]]
+    Version.FromVersion(minV) =>
+      [...withDesc, #["minVersion", P.string(Version.showVersion(minV))]]
 
     _ =>
       withDesc
@@ -236,16 +174,16 @@ serializeDependency = (dep) => {
 
   withMax = where(dep.versionRange) {
     Version.VersionRange(_, maxV) =>
-      [...withMin, #["maxVersion", Print.string(Version.showVersion(maxV))]]
+      [...withMin, #["maxVersion", P.string(Version.showVersion(maxV))]]
 
-    UntilVersion(maxV) =>
-      [...withMin, #["maxVersion", Print.string(Version.showVersion(maxV))]]
+    Version.UntilVersion(maxV) =>
+      [...withMin, #["maxVersion", P.string(Version.showVersion(maxV))]]
 
     _ =>
       withMin
   }
 
-  return Print.object(withMax)
+  return P.object(withMax)
 }
 maybeField :: String -> (a -> Value) -> Maybe a -> List #[String, Value]
 maybeField = (key, fn, maybeVal) => where(maybeVal) {
@@ -258,15 +196,15 @@ maybeField = (key, fn, maybeVal) => where(maybeVal) {
 serialize :: MadlibDotJson -> String
 export serialize = (mdj) => {
   fields = [
-    #["name", Print.string(mdj.name)],
-    #["version", Print.string(Version.showVersion(mdj.version))],
-    #["main", Print.string(mdj.main)],
+    #["name", P.string(mdj.name)],
+    #["version", P.string(Version.showVersion(mdj.version))],
+    #["main", P.string(mdj.main)],
   ]
-    ++ maybeField("madlibVersion", Print.string, mdj.madlibVersion)
-    ++ maybeField("bin", Print.string, mdj.bin)
-    ++ maybeField("dependencies", (deps) => Print.list(serializeDependency, deps), mdj.dependencies)
-    ++ maybeField("importAliases", Print.dict(Print.string), mdj.importAliases)
-    ++ maybeField("hooks", Print.dict(Print.string), mdj.hooks)
+    ++ maybeField("madlibVersion", P.string, mdj.madlibVersion)
+    ++ maybeField("bin", P.string, mdj.bin)
+    ++ maybeField("dependencies", (deps) => P.list(serializeDependency, deps), mdj.dependencies)
+    ++ maybeField("importAliases", P.dict(P.string), mdj.importAliases)
+    ++ maybeField("hooks", P.dict(P.string), mdj.hooks)
 
-  return Print.print(80, Print.object(fields))
+  return P.print(80, P.object(fields))
 }

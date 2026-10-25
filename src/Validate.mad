@@ -11,9 +11,9 @@ import IO from "IO"
 import { Just, Nothing } from "Maybe"
 import { andDo } from "Monad"
 
-import Color from "./Color"
-import { findByName, updateEntry } from "./Context"
-import { intersectRanges, isInRange } from "./Version"
+import Color from "@model/Color"
+import { findByName, updateEntry } from "@model/Context"
+import { intersectRanges, isInRange } from "@model/Version"
 
 
 
@@ -302,7 +302,7 @@ buildValidationOutput = (
   validationOutput = {
     context: updateEntry(madlibDotJson.name, rangeOutput.versionInfo, context),
     shouldCopy: rangeOutput.shouldCopy,
-    dependency: { ...dependency, name: Just(madlibDotJson.name) },
+    dependency: { ...dependency, name: madlibDotJson.name },
     madlibDotJson,
     buildHash,
     versionHash,

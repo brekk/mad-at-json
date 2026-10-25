@@ -5,12 +5,12 @@ import type { LockEntry } from "@model/MadlibLock"
 import type { MadlibLock } from "@model/MadlibLock"
 
 import Dict from "Dictionary"
-import { complement, identity, ifElse, not } from "Function"
+import { complement, identity, ifElse } from "Function"
 import List from "List"
 import { Just, Nothing } from "Maybe"
 
-import { AnyVersion } from "./Version"
 import Log from "@model/Log"
+import { AnyVersion } from "@model/Version"
 
 
 

@@ -8,7 +8,7 @@ import {
   findConflictedNames,
   findPathsToVersion,
   pathToChainString,
-} from "./ConflictAnalysis"
+} from "@model/ConflictAnalysis"
 
 
 

@@ -6,7 +6,7 @@ import { fromMaybe } from "Maybe"
 import String from "String"
 import Terminal from "Terminal"
 
-import Color from "./Color"
+import Color from "@model/Color"
 
 
 
@@ -95,13 +95,9 @@ export make = (tty, startedAt) => {
   render = () => if (tty) do {
     if (renderedLines > 0) {
       IO.put(Terminal.moveCursorUp(renderedLines))
+    } else do {
+      return {}
     }
-
-
-
-
-
-
     IO.put(Terminal.clearToEndOfScreen({}))
     IO.putLine(
       statusLine(
@@ -128,19 +124,9 @@ export make = (tty, startedAt) => {
 
   log = (message) => if (!tty) {
     line(message)
+  } else do {
+    return {}
   }
-
-
-
-
-
-
-
-
-
-
-
-
   start = () => {
     if (tty) {
       IO.put(Terminal.hideCursor({}))
@@ -213,20 +199,9 @@ export make = (tty, startedAt) => {
   complete = () => do {
     if (tty) {
       IO.put(Terminal.showCursor({}))
+    } else do {
+      return {}
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
     elapsed = DateNow({}) - startedAt
     line("")
     line(Color.bold("Package install summary"))
