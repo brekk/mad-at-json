@@ -1,109 +1,444 @@
 import type { Maybe } from "Maybe"
+import type { Wish } from "Wish"
 
-import type { Options, ResolutionOverride } from "@model/ConflictResolver"
+import type { Context } from "@model/Context"
+import type { Dependency } from "@model/Parse/Dependency"
+import type { MadlibDotJson } from "@model/Parse/MadlibJson"
+import type { VersionDotLock } from "@model/Parse/VersionLock"
+import type { Validate, ValidationInput, ValidationOutput } from "@model/Validate"
 
-import { always, identity } from "Function"
+import { liftA3 } from "Applicative"
+import { gt } from "Compare"
+import Dictionary from "Dictionary"
+import Directory from "Directory"
+import File from "File"
+import Fn from "Function"
 import IO from "IO"
 import List from "List"
-import { Just, Nothing } from "Maybe"
+import { Just, Nothing, fromMaybe } from "Maybe"
+import { andDo } from "Monad"
 import Process from "Process"
 import String from "String"
-import { fulfill } from "Wish"
+import Tuple from "Tuple"
+import Wish from "Wish"
 
-import Graph from "@model/Graph"
-import { baseProxy } from "@model/Proxy"
-import { run } from "@model/Run"
-import Upgrade from "@model/Upgrade"
+import Shroud from "shroud"
+
+import Color from "@model/Color"
+import Constants from "@model/Constants"
+import { addInstalledPackage, hasPackageBeenInstalled, initialContext } from "@model/Context"
+import { DownloadError, Downloaded, downloadIfNotCached } from "@model/Download"
+import { CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded, printError } from "@model/Error"
+import MadlibDotJson from "@model/Parse/MadlibJson"
+import VersionDotLock from "@model/Parse/VersionLock"
+import {
+  NotValid,
+  Valid,
+  ValidationError,
+  failWithRecoverable,
+  unsafeGetValidationValue,
+  validate,
+} from "@model/Validate"
 import Version from "@model/Version"
-import Why from "@model/Why"
+import { BuildHashCouldNotBeGenerated, VersionDotLockMissing, printWarning } from "@model/Warning"
 
 
 
-type Mode = Install(Options) | ShowGraph | ShowUpgrade | ShowWhy(String) | Invalid(String)
-parseResolution :: String -> Maybe ResolutionOverride
-parseResolution = (raw) => where(String.split("@", raw)) {
-  [name, version] =>
-    where(Version.parse(version)) {
-      Just(_) =>
-        name == "" ? Nothing : Just({ name, version })
-
-      Nothing =>
-        Nothing
-    }
+K = Fn.always
+I = Fn.identity
+copyPackageToMadlibModules :: Dependency -> Wish Process.CommandResult Process.CommandResult
+copyPackageToMadlibModules = ({ name, sanitizedUrl }) => Shroud.cover(
+  "cp",
+  [
+    "-R",
+    mappend(Constants.MADLIB_MODULES_PATH, name),
+    mappend(Constants.TEMPORARY_MODULES_PATH, sanitizedUrl ++ "/"),
+  ],
+)
+installNodeModules :: String -> Wish {} String
+installNodeModules = (pkgName) => pipe(
+  mappend(Constants.MADLIB_MODULES_PATH),
+  (path) => File.exists(`${path}package.json`) |> andDo(of(path)),
+  Wish.mapRej(K("")),
+  map(List.append($, ["install"])),
+  chain(
+    pipe(
+      Shroud.cover("npm", $),
+      Wish.mapRej(.stderr),
+    ),
+  ),
+  map(.stdout),
+  map(IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`)),
+  Wish.discardError(IO.putLineAndPass(`No node modules to install for '${pkgName}'`)),
+)(pkgName)
+initMadlibModulesFolder :: String -> a -> Wish String a
+initMadlibModulesFolder = (path, a) => pipe(
+  Shroud.cover("mkdir"),
+  Wish.mapRej(.stderr),
+  andDo(of(a)),
+)(["-p", path])
+projectBaseUrl :: Dependency -> String
+projectBaseUrl = (dependency) => `${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}`
+readMadlibDotJson :: Dependency -> Wish {} (Validate MadlibDotJson)
+readMadlibDotJson = (dependency) => pipe(
+  MadlibDotJson.load,
+  map(Valid),
+  Wish.discardError(
+    pipe(
+      MadlibDotJsonCouldNotBeLoaded,
+      ValidationError([], $, Nothing),
+    ),
+  ),
+)(`${projectBaseUrl(dependency)}/madlib.json`)
+readVersionDotLock :: Dependency -> Wish {} (Validate (Maybe VersionDotLock))
+readVersionDotLock = pipe(
+  projectBaseUrl,
+  mappend("/version.lock"),
+  VersionDotLock.load,
+  map(
+    pipe(
+      Just,
+      Valid,
+    ),
+  ),
+  Wish.discardError(K(NotValid([VersionDotLockMissing], Nothing))),
+)
+computeBuildHash :: Dependency -> Wish {} (Validate String)
+computeBuildHash = pipe(
+  projectBaseUrl,
+  List.append($, ["package", "generate-hash", "-i"]),
+  Shroud.cover("madlib"),
+  map(
+    pipe(
+      .stdout,
+      Valid,
+    ),
+  ),
+  Wish.discardError(K(NotValid([BuildHashCouldNotBeGenerated], ""))),
+)
+prepareValidationInput :: Dependency -> Wish {} (Validate ValidationInput)
+prepareValidationInput = (dependency) => pipe(
+  readVersionDotLock,
+  map(
+    liftA3(
+      (versionDotLock, computedBuildHash, madlibDotJson) => (
+        {
+          madlibDotJson,
+          versionDotLock,
+          computedVersionHash: Version.hash(madlibDotJson.version),
+          computedBuildHash,
+        }
+      ),
+    ),
+  ),
+  ap($, computeBuildHash(dependency)),
+  ap($, readMadlibDotJson(dependency)),
+)(dependency)
+formatCopyError :: String -> String
+formatCopyError = (err) => pipe(
+  String.lines,
+  Fn.ifElse(
+    pipe(
+      List.length,
+      gt($, 5),
+    ),
+    pipe(
+      List.slice(0, 5),
+      mappend($, ["..."]),
+    ),
+    I,
+  ),
+  map(mappend("    ")),
+  String.unlines,
+)(err)
+copyPackageFromTmp :: Validate ValidationOutput -> Wish {} (Validate ValidationOutput)
+copyPackageFromTmp = (vr) => where(vr) {
+  ValidationError(_, _, _) =>
+    of(vr)
 
   _ =>
-    Nothing
+    pipe(
+      unsafeGetValidationValue,
+      Fn.ifElse(
+        .shouldCopy,
+        pipe(
+          .dependency,
+          copyPackageToMadlibModules,
+          andDo(of(vr)),
+        ),
+        K(of(vr)),
+      ),
+      Wish.discardError(
+        ({ stderr }) => pipe(
+          unsafeGetValidationValue,
+          .madlibDotJson,
+          .name,
+          (n) => failWithRecoverable(
+            CopyToMadlibModulesFailed(`Failed to copy '${n}'${formatCopyError(stderr)}`),
+            vr,
+          ),
+        )(vr),
+      ),
+    )(vr)
 }
-parseInstallOptions :: List String -> Boolean -> List ResolutionOverride -> Mode
-parseInstallOptions = (args, interactive, overrides) => where(args) {
-  [] =>
-    Install({ interactive, overrides })
+displayInstalling :: Validate ValidationOutput -> Validate ValidationOutput
+displayInstalling = (validation) => {
+  validationOutput = unsafeGetValidationValue(validation)
+  name = validationOutput.madlibDotJson.name
+  version = Version.showVersion(validationOutput.madlibDotJson.version)
 
-  ["--interactive", ...rest] =>
-    parseInstallOptions(rest, true, overrides)
+  IO.putLine(`Installing ${name} version ${version}`)
 
-  ["--resolve", raw, ...rest] =>
-    where(parseResolution(raw)) {
-      Just(resolution) =>
-        parseInstallOptions(rest, interactive, [...overrides, resolution])
+  return validation
+}
+displayResult :: Validate ValidationOutput -> Validate ValidationOutput
+displayResult = (validation) => where(validation) {
+  Valid(a) =>
+    pipe(
+      displayInstalling,
+      Color.tabGreen("Installed!"),
+    )(validation)
 
-      Nothing =>
-        Invalid(`Invalid resolution '${raw}'; expected PACKAGE@x.y.z`)
+  NotValid(warnings, a) =>
+    pipe(
+      displayInstalling,
+      List.reduce(printWarning, $, warnings),
+      Color.tabYellow("Installed, with some issues"),
+    )(validation)
+
+  ValidationError(warnings, err, maybeA) =>
+    pipe(
+      where {
+        Just(a) =>
+          displayInstalling(of(a))
+
+        Nothing =>
+          validation
+      },
+      K(err),
+      List.reduce(printWarning, $, warnings),
+      printError(validation),
+    )(maybeA)
+}
+tryRecovery :: Validate a -> Validate a
+tryRecovery = (validation) => where(validation) {
+  ValidationError(_, _, Just(a)) =>
+    pure(a)
+
+  _ =>
+    validation
+}
+runPostInstallHook :: Boolean -> MadlibDotJson -> a -> Wish {} a
+runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
+  .hooks,
+  chain(Dictionary.get("postInstall")),
+  where {
+    Just(script) =>
+      do {
+        cwd = isMainPackage ? "./" : `madlib_modules/${madlibDotJson.name}`
+        IO.putLine(
+          `Executing postInstall script for package '${madlibDotJson.name}', it may take a while.`,
+        )
+        _ <- Shroud.coverWith(
+          { ...Process.DEFAULT_COMMAND_OPTIONS, cwd },
+          Shroud.littleDeath,
+          "sh",
+          ["-c", script],
+        )
+        IO.putLine(`postInstall script executed for package '${madlibDotJson.name}'`)
+        return of({})
+      }
+
+    _ =>
+      of({})
+  },
+  Wish.mapRej(
+    (result) => {
+      IO.putLine(result.stdout)
+      IO.putLine(result.stderr)
+      return {}
+    },
+  ),
+  andDo(of(passThrough)),
+)(madlibDotJson)
+postProcess :: #[Context, List Dependency]
+  -> Dependency
+  -> Validate ValidationOutput
+  -> Wish {} #[Context, List Dependency]
+postProcess = (previousContextAndDeps, processedDependency, validation) => where(validation) {
+  ValidationError(_, _, _) =>
+    of(previousContextAndDeps)
+
+  v =>
+    do {
+      result = unsafeGetValidationValue(v)
+      return pipe(
+        (validationResult) => (
+          {
+            ...validationResult,
+            context: addInstalledPackage(
+              processedDependency.sanitizedUrl,
+              validationResult.context,
+            ),
+          }
+        ),
+        (validationResult) => validationResult.shouldCopy
+          ? #[
+            validationResult.context,
+            mappend(
+              Tuple.snd(previousContextAndDeps),
+              fromMaybe([], validationResult.madlibDotJson.dependencies),
+            ),
+          ]
+          : #[validationResult.context, Tuple.snd(previousContextAndDeps)],
+        runPostInstallHook(false, result.madlibDotJson),
+      )(result)
     }
-
-  [arg, ..._] =>
-    Invalid(`Unknown install option '${arg}'`)
 }
-parseMode :: List String -> Mode
-parseMode = (args) => where(List.drop(1, args)) {
-  ["--graph", ..._] =>
-    ShowGraph
+processDependency :: #[Context, List Dependency]
+  -> Dependency
+  -> Wish {} #[Context, List Dependency]
+processDependency = (contextAndNextDeps, dependency) => pipe(
+  prepareValidationInput,
+  map(chain(validate(Tuple.fst(contextAndNextDeps), dependency))),
+  chain(copyPackageFromTmp),
+  map(
+    pipe(
+      displayResult,
+      tryRecovery,
+    ),
+  ),
+  chain(postProcess(contextAndNextDeps, dependency)),
+  map(IO.newLine),
+)(dependency)
+filterAlreadyInstalledDependencies :: Context -> List Dependency -> List Dependency
+filterAlreadyInstalledDependencies = (context, dependencies) => List.filter(
+  pipe(
+    .sanitizedUrl,
+    hasPackageBeenInstalled($, context),
+    Fn.not,
+  ),
+)(dependencies)
+processDependencies :: Context -> List Dependency -> Wish {} #[Context, List Dependency]
+processDependencies = (context, dependencies) => pipe(
+  filterAlreadyInstalledDependencies(context),
+  pipe(
+    map(downloadIfNotCached),
+    Wish.parallel,
+  ),
+  map(
+    List.mapMaybe(
+      where {
+        DownloadError(err) =>
+          IO.putLineAndPass(Color.red(err), Nothing)
 
-  ["--upgrade", ..._] =>
-    ShowUpgrade
+        Downloaded(a) =>
+          Just(a)
+      },
+    ),
+  ),
+  chain(List.reduceM(processDependency, #[context, []])),
+  chain(
+    where {
+      #[_context, []] =>
+        of(#[_context, []])
 
-  ["--why", pkg, ..._] =>
-    ShowWhy(pkg)
+      #[_context, nextDependencies] =>
+        processDependencies(_context, nextDependencies)
+    },
+  ),
+)(dependencies)
+installedDependencyFolders :: {} -> Wish {} (List String)
+installedDependencyFolders = () => pipe(
+  Directory.read,
+  Wish.discardError(K([])),
+)(Constants.MADLIB_MODULES_PATH)
+consumeAndInstallPackages = (context, madlibDotJson) => pipe(
+  .dependencies,
+  fromMaybe([]),
+  processDependencies(context),
+  andDo(installedDependencyFolders()),
+  chain(
+    pipe(
+      map(installNodeModules),
+      Wish.parallel,
+    ),
+  ),
+  chain(runPostInstallHook(true, madlibDotJson)),
+)(madlibDotJson)
+installPackages :: Context -> String -> Wish {} (List String)
+installPackages = (context, madlibDotJsonPath) => pipe(
+  File.read,
+  Wish.mapRej(K(Constants.MADLIB_NOT_FOUND)),
+  chain(initMadlibModulesFolder(Constants.MADLIB_MODULES_PATH)),
+  Wish.discardError(I),
+  chain(
+    pipe(
+      MadlibDotJson.parse,
+      Wish.bichain(
+        pipe(
+          IO.putLine,
+          K(of([])),
+        ),
+        consumeAndInstallPackages(context),
+      ),
+    ),
+  ),
+)(madlibDotJsonPath)
+/**
+ * prepare runs before everything and takes care of creating a temporary folder
+ * as well as reading and saving the content of the package.json file in-memory
+ * in order to restore it at it end
+ */
+prepare :: String -> Wish String String
+prepare = (packageDotJsonPath) => pipe(
+  Shroud.cover("mkdir"),
+  andDo(of(packageDotJsonPath)),
+  Wish.mapRej(.stderr),
+  chain(
+    pipe(
+      File.exists,
+      Wish.mapRej(K("")),
+      map(K(packageDotJsonPath)),
+    ),
+  ),
+  chain(
+    (path) => pipe(
+      Shroud.cover($, ["i"]),
+      Wish.mapRej(.stderr),
+      andDo(of(path)),
+    )("npm"),
+  ),
+  chain(
+    pipe(
+      File.read,
+      Wish.mapRej(K("")),
+    ),
+  ),
+)(["-p", Constants.TEMPORARY_MODULES_PATH])
+restorePackageDotJson :: String -> Wish {} {}
+restorePackageDotJson = pipe(
+  File.write("package.json"),
+  Wish.mapRej(K({})),
+)
+run :: {} -> Wish {} {}
+export run = () => {
+  IO.putLine("Installing dependencies ...")
 
-  remainingArgs =>
-    parseInstallOptions(remainingArgs, false, [])
-}
-main = () => {
-  mode = parseMode(Process.Argv)
-  config = baseProxy
-  exitWithError = (error) => {
-    IO.trace("error", error)
-    return Process.exit(1)
-  }
-
-  where(mode) {
-    ShowGraph =>
+  return pipe(
+    prepare,
+    Wish.bichain(
       pipe(
-        Graph.render,
-        fulfill(exitWithError, identity),
-      )(config)
-
-    ShowUpgrade =>
-      pipe(
-        Upgrade.render,
-        fulfill(exitWithError, identity),
-      )(config)
-
-    Invalid(message) =>
-      always(
-        do {
-          IO.putLine(`error: ${message}`)
-          return Process.exit(1)
-        },
-      )
-
-    ShowWhy(pkg) =>
-      fulfill(exitWithError, identity, Why.render(config, pkg))
-
-    Install(options) =>
-      pipe(
-        run(options),
-        fulfill(exitWithError, identity),
-      )(config)
-  }
+        K("madlib.json"),
+        installPackages(initialContext),
+        Wish.mapRej(IO.trace("it failed!")),
+      ),
+      (packageDotJsonContent) => pipe(
+        installPackages(initialContext),
+        chain((x) => restorePackageDotJson(packageDotJsonContent) |> andDo(of(x))),
+        Wish.chainRej((x) => restorePackageDotJson(packageDotJsonContent) |> andDo(Wish.bad(x))),
+      )("madlib.json"),
+    ),
+    andDo(of({})),
+  )("package.json")
 }

@@ -9,6 +9,7 @@ import type { Proxy } from "@model/Proxy"
 import { Left, Right } from "Either"
 import File from "File"
 import { always } from "Function"
+import {} from "Json"
 import J from "Json/Parse"
 import P from "Json/Print"
 import List from "List"
@@ -17,15 +18,15 @@ import { Just, Nothing } from "Maybe"
 import Wish from "Wish"
 import { bad, mapRej } from "Wish"
 
+import Dependency from "@model/Dependency"
 import Log from "@model/Log"
-import Parsed from "@model/Parse/Dependency"
 import Version from "@model/Version"
 
 
 
 export alias MadlibDotJson = {
   bin :: Maybe String,
-  dependencies :: Maybe (List Parsed.Dependency),
+  dependencies :: Maybe (List Dependency),
   hooks :: Maybe (Dictionary String String),
   importAliases :: Maybe (Dictionary String String),
   madlibVersion :: Maybe String,
@@ -53,7 +54,7 @@ instance Json MadlibDotJson {
         { bin, dependencies, hooks, importAliases, madlibVersion, main, name, version },
       ),
     J.field("bin", J.maybe(J.string)),
-    Parsed.dependenciesParser,
+    Dependency.dependenciesParser,
     J.field("hooks", J.maybe(J.dict(J.string))),
     J.field("importAliases", J.maybe(J.dict(J.string))),
     J.field("madlibVersion", J.maybe(J.string)),
@@ -81,7 +82,7 @@ instance Json MadlibDotJson {
 makeMadlibDotJson :: String
   -> String
   -> Maybe String
-  -> Maybe (List Parsed.Dependency)
+  -> Maybe (List Dependency)
   -> String
   -> Maybe String
   -> Maybe (Dictionary String String)
@@ -113,7 +114,7 @@ parser = J.chain8(
   J.field("name", J.string),
   J.field("version", J.string),
   J.maybe(J.field("madlibVersion", J.string)),
-  Parsed.dependenciesParser,
+  Dependency.dependenciesParser,
   J.field("main", J.string),
   J.maybe(J.field("bin", J.string)),
   J.maybe(J.field("importAliases", J.dict(J.string))),
@@ -153,12 +154,20 @@ serializeDependency :: Dependency -> Value
 serializeDependency = (dep) => {
   base = [#["url", P.string(dep.url)]]
 
-  withDesc = where(dep.description) {
-    Just(desc) =>
-      [...base, #["description", P.string(desc)]]
+  withName = where(dep.name) {
+    Just(name) =>
+      [...base, #["name", P.string(name)]]
 
     Nothing =>
       base
+  }
+
+  withDesc = where(dep.description) {
+    Just(desc) =>
+      [...withName, #["description", P.string(desc)]]
+
+    Nothing =>
+      withName
   }
 
   withMin = where(dep.versionRange) {

@@ -32,7 +32,7 @@ DEFAULT_DEPENDENCY = {
   url: "http://url.tld",
   sanitizedUrl: "http___url_tld",
   versionRange: AnyVersion,
-  name: "test-module",
+  name: Just("test-module"),
 }
 DEFAULT_INPUT = {
   madlibDotJson: MADLIBDOTJSON,
@@ -50,7 +50,7 @@ test(
         initialContext,
       ),
       shouldCopy: true,
-      dependency: { ...DEFAULT_DEPENDENCY, name: "package-name" },
+      dependency: { ...DEFAULT_DEPENDENCY, name: Just("package-name") },
       madlibDotJson: MADLIBDOTJSON,
       buildHash: "",
       versionHash: "",
@@ -75,7 +75,7 @@ test(
         shouldCopy: true,
         dependency: {
           ...DEFAULT_DEPENDENCY,
-          name: "package-name",
+          name: Just("package-name"),
           versionRange: FromVersion(Version(2, 0, 0)),
         },
         madlibDotJson: MADLIBDOTJSON,

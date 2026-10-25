@@ -115,7 +115,7 @@ FOO_DEP = {
   sanitizedUrl: "https___example_com_foo-v2_zip",
   description: Just("foo"),
   versionRange: AnyVersion,
-  name: "foo",
+  name: Just("foo"),
 }
 FOO_MADLIB_JSON = {
   name: "my-app",

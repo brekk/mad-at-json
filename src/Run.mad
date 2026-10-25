@@ -190,10 +190,7 @@ postProcessSuccessPath = (prev, url, sanitizedUrl, v) => {
         )(val),
       }
     ),
-    (val) => of(#[
-      val.context,
-      mappend(Tuple.snd(prev), fromMaybe([], val.madlibDotJson.dependencies)),
-    ]),
+    (val) => of(#[val.context, mappend(Tuple.snd(prev), fromMaybe([], deps))]),
   )(res)
 }
 postProcess :: #[Context, List Dependency]
@@ -533,6 +530,13 @@ materializeResolved = (proxy, previousLock, rootMadlibDotJson, resolvedLock) => 
   )(folders)
   return runPostInstallHook(true, rootMadlibDotJson, resolvedLock)
 }
+resolveConflicts :: Proxy
+  -> Options
+  -> Reporter
+  -> Context
+  -> MadlibLock
+  -> MadlibDotJson
+  -> Wish {} MadlibLock
 resolveConflicts = (proxy, options, reporter, context, previousLock, madlibDotJson) => pipe(
   .dependencies,
   fromMaybe([]),
@@ -626,7 +630,13 @@ writeLockFile = (proxy, lock) => {
 // Build a minimal Dependency for prefetch-only use (versionRange is unused by download logic).
 makePrefetchDep :: String -> Dependency
 makePrefetchDep = (url) => (
-  { url, sanitizedUrl: sanitizeUrl(url), versionRange: AnyVersion, description: Nothing, name: url }
+  {
+    url,
+    sanitizedUrl: sanitizeUrl(url),
+    versionRange: AnyVersion,
+    description: Nothing,
+    name: Nothing,
+  }
 )
 // Pre-download every package in the lock file in parallel so the project-local
 // and global caches are warm before the main install loop starts.  This turns

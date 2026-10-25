@@ -66,7 +66,7 @@ test(
               url: "https://example.com/pkg.zip",
               sanitizedUrl: sanitizeUrl("https://example.com/pkg.zip"),
               versionRange: AnyVersion,
-              name: "packaaaaage",
+              name: Just("packaaaaage"),
             },
           ]),
           hooks: Nothing,

@@ -302,7 +302,7 @@ buildValidationOutput = (
   validationOutput = {
     context: updateEntry(madlibDotJson.name, rangeOutput.versionInfo, context),
     shouldCopy: rangeOutput.shouldCopy,
-    dependency: { ...dependency, name: madlibDotJson.name },
+    dependency: { ...dependency, name: Just(madlibDotJson.name) },
     madlibDotJson,
     buildHash,
     versionHash,

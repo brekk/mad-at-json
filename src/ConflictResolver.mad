@@ -164,7 +164,7 @@ pickForConflict = (proxy, rootLabel, packages, rootDeps, conflictedName) => {
 
     proxy.put(Terminal.clearToEndOfScreen({}))
     proxy.putLine("")
-    proxy.putLine(`  ${Color.yellow("!")} Conflict: ${Color.bold(conflictedName)}`)
+    proxy.putLine("  " ++ Color.yellow("!") ++ " Conflict: " ++ Color.bold(conflictedName))
     proxy.putLine("  Select the version to persist in madlib.lock:")
     proxy.putLine("")
     List.reduce(
@@ -174,10 +174,10 @@ pickForConflict = (proxy, rootLabel, packages, rootDeps, conflictedName) => {
         marker = isSelected ? Color.bold(Color.green(">")) : " "
         version = choiceVersion(choice)
         versionStr = isSelected ? Color.bold(Color.green(version)) : version
-        proxy.putLine(`    ${marker} ${versionStr}  ${choiceUrl(choice)}`)
+        proxy.putLine("    " ++ marker ++ " " ++ versionStr ++ "  " ++ choiceUrl(choice))
         List.forEach(
           (path) => proxy.putLine(
-            `        ${ConflictAnalysis.pathToChainString(packages, rootLabel, path)}`,
+            "        " ++ ConflictAnalysis.pathToChainString(packages, rootLabel, path),
           ),
           chains,
         )
@@ -263,7 +263,9 @@ invalidResolution = (name, requested, choices) => {
     map(choiceVersion),
     show,
   )(choices)
-  return bad(`Cannot resolve '${name}@${requested}'; available versions: ${available}`)
+  return bad(
+    "Cannot resolve '" ++ name ++ "@" ++ requested ++ "'; available versions: " ++ available,
+  )
 }
 staleResolution = (name, resolution, choices) => {
   available = pipe(
@@ -271,8 +273,15 @@ staleResolution = (name, resolution, choices) => {
     show,
   )(choices)
   return bad(
-    `Saved resolution '${name}@${resolution.version}' is stale; available versions: ${available}. `
-      ++ `Choose one with madlib install --resolve ${name}@VERSION`,
+    "Saved resolution '"
+      ++ name
+      ++ "@"
+      ++ resolution.version
+      ++ "' is stale; available versions: "
+      ++ available
+      ++ ". Choose one with madlib install --resolve "
+      ++ name
+      ++ "@VERSION",
   )
 }
 resolveNameWithProxy :: Proxy
@@ -339,16 +348,18 @@ resolveNameWithProxy = (
                   do {
                     IO.putLine(
                       Color.green(
-                        `Automatically resolved ${name}@${
-                          choiceVersion(choice)
-                        } (latest compatible patch).`,
+                        "Automatically resolved "
+                          ++ name
+                          ++ "@"
+                          ++ choiceVersion(choice)
+                          ++ " (latest compatible patch).",
                       ),
                     )
                     return of(applyChoice(name, LatestPatch, choice, lock))
                   }
 
                 Nothing =>
-                  bad(`Could not resolve patch versions for '${name}'`)
+                  bad("Could not resolve patch versions for '" ++ name ++ "'")
               }
               : options.interactive
                 ? pipe(
@@ -356,7 +367,7 @@ resolveNameWithProxy = (
                   mapRej(always("Conflict resolution was cancelled")),
                   map((choice) => applyChoice(name, Exact, choice, lock)),
                 )(name)
-                : bad(`Dependency conflict '${name}' requires an explicit resolution`)
+                : bad("Dependency conflict '" ++ name ++ "' requires an explicit resolution")
       }
   }
 }
@@ -373,7 +384,7 @@ printGuidance = (madlibDotJson, lock, message) => {
   IO.putLine("Or choose explicitly:")
   List.forEach(
     (name) => List.forEach(
-      (choice) => IO.putLine(`  madlib install --resolve ${name}@${choiceVersion(choice)}`),
+      (choice) => IO.putLine("  madlib install --resolve " ++ name ++ "@" ++ choiceVersion(choice)),
       versionChoices(name, lock.packages),
     ),
     ConflictAnalysis.findConflictedNames(lock.packages),
@@ -381,7 +392,7 @@ printGuidance = (madlibDotJson, lock, message) => {
 }
 run :: Proxy -> Options -> MadlibDotJson -> MadlibLock -> Wish String MadlibLock
 export run = (config, options, madlibDotJson, lock) => {
-  rootLabel = `${Color.bold(madlibDotJson.name)}@${Version.showVersion(madlibDotJson.version)}`
+  rootLabel = Color.bold(madlibDotJson.name) ++ "@" ++ Version.showVersion(madlibDotJson.version)
   rootDeps = pipe(
     fromMaybe([]),
     map(.url),
@@ -404,7 +415,7 @@ export run = (config, options, madlibDotJson, lock) => {
     : !List.isEmpty(unknownOverrides)
       ? where(unknownOverrides) {
         [first, ..._] =>
-          bad(`Cannot resolve unknown package '${first.name}'`)
+          bad("Cannot resolve unknown package " ++ first.name ++ "'")
 
         _ =>
           bad("Invalid resolution")

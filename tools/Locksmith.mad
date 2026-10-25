@@ -109,7 +109,7 @@ captureTheFlag = (state, flag) => where(flag) {
 }
 renderHelp = (useColor, flags) => {
   fn = (useColor ? EPrint.printLegendWithColor : EPrint.printLegend)
-  return "locksmith\nthe flag that `madlib package` ought to have\n\n" ++ fn(flags)
+  return " pilcrow\na magic helper for madlib README files\n\n" ++ fn(flags)
 }
 rel = (cwd, x) => pipe(
   List.append($, [cwd]),
@@ -122,26 +122,23 @@ hashDir = pipe(
   Wish.mapRej(.stderr),
 )
 alias GreasedLock = #[MadlibJson.MadlibDotJson, VersionLock.VersionDotLock]
-serialize :: LocksmithState -> GreasedLock -> Wish String GreasedLock
-serialize = ({ madlibDotJson, versionDotLock, cwd }, filePair) => pipe(
-  Log.env.locksmith("filePair"),
-  where {
-    #[madJson, versionLock] =>
-      pipe(
-        rel(cwd),
-        File.write($, MadlibJson.write(madJson)),
-        Wish.mapRej(Fn.always("Unable to write madlib.json")),
-        chain(
-          (_) => pipe(
-            rel(cwd),
-            File.write($, VersionLock.write(versionLock)),
-            Wish.mapRej(Fn.always("Unable to write version.lock")),
-          )(versionDotLock),
-        ),
-        map(Fn.always(filePair)),
-      )(madlibDotJson)
-  },
-)(filePair)
+// serialize :: LocksmithState -> GreasedLock -> Wish String GreasedLock
+serialize = ({ madlibDotJson, versionDotLock, cwd }) => (filePair) => where(filePair) {
+  #[madJson, versionLock] =>
+    pipe(
+      rel(cwd),
+      File.write($, MadlibJson.write(madJson)),
+      Wish.mapRej(Fn.always("Unable to write madlib.json")),
+      chain(
+        (_) => pipe(
+          rel(cwd),
+          File.write($, VersionLock.write(versionLock)),
+          Wish.mapRej(Fn.always("Unable to write version.lock")),
+        )(versionDotLock),
+      ),
+      map(Fn.always(filePair)),
+    )(madlibDotJson)
+}
 // runLocksmith :: LocksmithState -> Wish String String
 runLocksmith = (conf) => do {
   { madlibDotJson, versionDotLock, cwd, setVersion } = conf
@@ -151,7 +148,6 @@ runLocksmith = (conf) => do {
     MadlibJson.load,
     map(Log.env.config("madlib.json")),
     Wish.mapRej(Fn.always("BARF?")),
-    map(Log.env.locksmith("WHATEVER")),
   )(madlibDotJson)
   versionJson <- pipe(
     relative,
