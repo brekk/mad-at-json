@@ -20,6 +20,7 @@ import { bad, mapRej } from "Wish"
 
 import Dependency from "@model/Dependency"
 import Log from "@model/Log"
+import { baseProxy } from "@model/Proxy"
 import Version from "@model/Version"
 
 
@@ -143,57 +144,57 @@ Error: `,
     ),
   ),
 )(path)
+export load = loadWithProxy(baseProxy)
 export writeWithWidth = (width, jj) => pipe(
   toJson,
   P.printJson(width),
 )(jj)
 export write = writeWithWidth(80)
 // ---- Serialization ----------------------------------------------------------
-
-serializeDependency :: Dependency -> Value
-serializeDependency = (dep) => {
-  base = [#["url", P.string(dep.url)]]
-
-  withName = where(dep.name) {
-    Just(name) =>
-      [...base, #["name", P.string(name)]]
-
-    Nothing =>
-      base
-  }
-
-  withDesc = where(dep.description) {
-    Just(desc) =>
-      [...withName, #["description", P.string(desc)]]
-
-    Nothing =>
-      withName
-  }
-
-  withMin = where(dep.versionRange) {
-    Version.VersionRange(minV, _) =>
-      [...withDesc, #["minVersion", P.string(Version.showVersion(minV))]]
-
-    Version.FromVersion(minV) =>
-      [...withDesc, #["minVersion", P.string(Version.showVersion(minV))]]
-
-    _ =>
-      withDesc
-  }
-
-  withMax = where(dep.versionRange) {
-    Version.VersionRange(_, maxV) =>
-      [...withMin, #["maxVersion", P.string(Version.showVersion(maxV))]]
-
-    Version.UntilVersion(maxV) =>
-      [...withMin, #["maxVersion", P.string(Version.showVersion(maxV))]]
-
-    _ =>
-      withMin
-  }
-
-  return P.object(withMax)
-}
+// serializeDependency :: Dependency -> Value
+// serializeDependency = (dep) => {
+//   base = [#["url", P.string(dep.url)]]
+//
+//   withName = where(dep.name) {
+//     Just(name) =>
+//       [...base, #["name", P.string(name)]]
+//
+//     Nothing =>
+//       base
+//   }
+//
+//   withDesc = where(dep.description) {
+//     Just(desc) =>
+//       [...withName, #["description", P.string(desc)]]
+//
+//     Nothing =>
+//       withName
+//   }
+//
+//   withMin = where(dep.versionRange) {
+//     Version.VersionRange(minV, _) =>
+//       [...withDesc, #["minVersion", P.string(Version.showVersion(minV))]]
+//
+//     Version.FromVersion(minV) =>
+//       [...withDesc, #["minVersion", P.string(Version.showVersion(minV))]]
+//
+//     _ =>
+//       withDesc
+//   }
+//
+//   withMax = where(dep.versionRange) {
+//     Version.VersionRange(_, maxV) =>
+//       [...withMin, #["maxVersion", P.string(Version.showVersion(maxV))]]
+//
+//     Version.UntilVersion(maxV) =>
+//       [...withMin, #["maxVersion", P.string(Version.showVersion(maxV))]]
+//
+//     _ =>
+//       withMin
+//   }
+//
+//   return P.object(withMax)
+// }
 maybeField :: String -> (a -> Value) -> Maybe a -> List #[String, Value]
 maybeField = (key, fn, maybeVal) => where(maybeVal) {
   Just(v) =>
@@ -211,7 +212,7 @@ export serialize = (mdj) => {
   ]
     ++ maybeField("madlibVersion", P.string, mdj.madlibVersion)
     ++ maybeField("bin", P.string, mdj.bin)
-    ++ maybeField("dependencies", (deps) => P.list(serializeDependency, deps), mdj.dependencies)
+    ++ maybeField("dependencies", (deps) => P.list(toJson, deps), mdj.dependencies)
     ++ maybeField("importAliases", P.dict(P.string), mdj.importAliases)
     ++ maybeField("hooks", P.dict(P.string), mdj.hooks)
 

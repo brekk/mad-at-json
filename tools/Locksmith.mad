@@ -15,9 +15,9 @@ import EPrint from "ensign/Declared/Print"
 import Flags from "ensign/Flags"
 import Shroud from "shroud"
 
-import MadlibJson from "@model/Parse/MadlibJson"
-import VersionLock from "@model/Parse/VersionLock"
+import MadlibJson from "@model/MadlibDotJson"
 import Version from "@model/Version"
+import VersionLock from "@model/VersionDotLock"
 import Log from "@tools/LocksmithLog"
 
 

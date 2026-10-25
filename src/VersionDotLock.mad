@@ -90,3 +90,8 @@ export loadWithProxy = (config, path) => pipe(
   ),
 )(path)
 export load = loadWithProxy(baseProxy)
+export writeWithWidth = (width, jj) => pipe(
+  toJson,
+  P.printJson(width),
+)(jj)
+export write = writeWithWidth(80)

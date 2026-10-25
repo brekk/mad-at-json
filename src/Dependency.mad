@@ -1,9 +1,12 @@
+import type { Value } from "Json/Value"
+
 import type { Maybe } from "Maybe"
 
 import type { VersionRange } from "@model/Version"
 
 import J from "Json/Parse"
 import P from "Json/Print"
+import List from "List"
 import { Just } from "Maybe"
 import { Nothing } from "Maybe"
 import {} from "Wish"
@@ -24,12 +27,7 @@ export alias Dependency = {
 instance Json Dependency {
   fromJson = dependencyParser
 
-  toJson = ({ description, name, sanitizedUrl, url, versionRange }) => P.object([
-    #["description", P.string(description ?? "")],
-    #["name", P.string(name ?? "")],
-    #["url", P.string(url)],
-    ...Version.toJsonPairs(versionRange),
-  ])
+  toJson = serializeDependency
 }
 // dap up your deps
 export construct = (url, description, maybeMinVersion, maybeMaxVersion, name) => Log
@@ -69,3 +67,55 @@ export createWithName = (name, url) => (
   }
 )
 export create = createWithName(Nothing)
+toJsonName = (dep, base) => where(dep.name) {
+  Just(name) =>
+    [...base, #["name", P.string(name)]]
+
+  Nothing =>
+    base
+}
+toJsonDesc = (dep, base) => where(dep.description) {
+  Just(desc) =>
+    [...base, #["description", P.string(desc)]]
+
+  Nothing =>
+    base
+}
+toJsonMin = (dep, base) => where(dep.versionRange) {
+  Version.VersionRange(minV, _) =>
+    [...base, #["minVersion", P.string(Version.showVersion(minV))]]
+
+  Version.FromVersion(minV) =>
+    [...base, #["minVersion", P.string(Version.showVersion(minV))]]
+
+  _ =>
+    base
+}
+toJsonMax = (dep, base) => where(dep.versionRange) {
+  Version.VersionRange(_, maxV) =>
+    [...base, #["maxVersion", P.string(Version.showVersion(maxV))]]
+
+  Version.UntilVersion(maxV) =>
+    [...base, #["maxVersion", P.string(Version.showVersion(maxV))]]
+
+  _ =>
+    base
+}
+serializeDependency :: Dependency -> Value
+serializeDependency = (dep) => {
+  base = [#["url", P.string(dep.url)]]
+  raw = pipe(
+    map((fn) => fn(dep)),
+    List.reduce((agg, fn) => fn(agg), base),
+  )([toJsonName, toJsonDesc, toJsonMin, toJsonMax])
+
+  // withName = toJsonName(dep, base)
+
+  // withDesc = toJsonDesc(dep, withName)
+
+  // withMin = toJsonMin(dep, withDesc)
+
+  // withMax = toJsonMax(dep, withMin)
+  // IO.pTrace("rawwwwrere", #[raw, withMax])
+  return P.object(raw)
+}
