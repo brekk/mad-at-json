@@ -7,8 +7,7 @@ import type { VersionRange } from "@model/Version"
 import J from "Json/Parse"
 import P from "Json/Print"
 import List from "List"
-import { Just } from "Maybe"
-import { Nothing } from "Maybe"
+import { Just, Nothing, fromMaybe } from "Maybe"
 import {} from "Wish"
 
 import Log from "@model/Log"
@@ -29,19 +28,22 @@ instance Json Dependency {
 
   toJson = serializeDependency
 }
+ensureName = (raw) => pipe(
+  descriptionAsName,
+  map((#[d, n]) => ({ ...raw, description: Just(d), name: Just(n) })),
+  fromMaybe(raw),
+)(raw)
 // dap up your deps
-export construct = (url, description, maybeMinVersion, maybeMaxVersion, name) => Log
-  .env
-  .parseDependency(
-    "constructing",
-    {
-      url,
-      description,
-      versionRange: Version.createRange(maybeMinVersion, maybeMaxVersion),
-      name,
-      sanitizedUrl: sanitizeUrl(url),
-    },
-  )
+export construct = (url, description, maybeMinVersion, maybeMaxVersion, name) => pipe(
+  ensureName,
+  Log.env.parseDependency("constructing"),
+)({
+  url,
+  description,
+  versionRange: Version.createRange(maybeMinVersion, maybeMaxVersion),
+  name,
+  sanitizedUrl: sanitizeUrl(url),
+})
 versionField = (key) => pipe(
   J.field($, J.string),
   J.maybe,
@@ -55,17 +57,30 @@ export dependencyParser = J.map5(
   versionField("maxVersion"),
   J.maybe(J.field("name", J.string)),
 )
+export descriptionAsName = (x) => where(#[x.description, x.name]) {
+  #[Just(d), Just(n)] =>
+    Just(#[d, n])
+
+  #[Just(d), _] =>
+    Just(#[d, d])
+
+  #[_, Just(n)] =>
+    Just(#[n, n])
+
+  _ =>
+    Nothing
+}
 dependenciesParser :: J.Parser (Maybe (List Dependency))
 export dependenciesParser = J.maybe(J.field("dependencies", J.list(dependencyParser)))
-export createWithName = (name, url) => (
-  {
-    url,
-    sanitizedUrl: sanitizeUrl(url),
-    versionRange: Version.AnyVersion,
-    description: Nothing,
-    name,
-  }
-)
+export createWithName = (name, url) => pipe(
+  ensureName,
+)({
+  url,
+  sanitizedUrl: sanitizeUrl(url),
+  versionRange: Version.AnyVersion,
+  description: Nothing,
+  name,
+})
 export create = createWithName(Nothing)
 toJsonName = (dep, base) => where(dep.name) {
   Just(name) =>

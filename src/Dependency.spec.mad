@@ -30,7 +30,7 @@ Study.report(
       `{"url": "https://whatever/cool.zip", "description": "whatever" }`,
       Right({
         description: Just("whatever"),
-        name: Nothing,
+        name: Just("whatever"),
         sanitizedUrl: "u_bef9c668b137c267f593d2785273c96a",
         url: "https://whatever/cool.zip",
         versionRange: V.AnyVersion,

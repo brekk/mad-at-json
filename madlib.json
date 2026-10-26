@@ -1,19 +1,13 @@
 {
   "name": "mad-at-json",
   "version": "0.2.0",
-  "main": "src/Library.mad",
-  "bin": "src/Main.mad",
+  "main": "src/MadlibDotJson.mad",
   "importAliases": {
     ".": ".",
     "model": "src",
     "tools": "tools"
   },
   "dependencies": [
-    {
-      "minVersion": "0.1.5",
-      "url": "https://github.com/brekk/ensign/archive/refs/tags/v0.1.5.zip",
-      "description": "ensign"
-    },
     {
       "minVersion": "0.0.7",
       "url": "https://github.com/brekk/study/archive/refs/tags/v0.0.7.zip",
@@ -23,11 +17,6 @@
       "minVersion": "0.3.1",
       "url": "https://github.com/brekk/party-bus/archive/refs/tags/v0.3.1.zip",
       "description": "PartyBus"
-    },
-    {
-      "minVersion": "3.0.0",
-      "url": "https://github.com/brekk/shroud/archive/refs/tags/v3.0.0.zip",
-      "description": "shroud"
     }
   ]
 }

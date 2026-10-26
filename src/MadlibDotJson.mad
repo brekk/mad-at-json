@@ -25,6 +25,14 @@ import Version from "@model/Version"
 
 
 
+maybeField :: String -> (a -> Value) -> Maybe a -> List #[String, Value]
+maybeField = (key, fn, maybeVal) => where(maybeVal) {
+  Just(v) =>
+    [#[key, fn(v)]]
+
+  Nothing =>
+    []
+}
 export alias MadlibDotJson = {
   bin :: Maybe String,
   dependencies :: Maybe (List Dependency),
@@ -35,17 +43,25 @@ export alias MadlibDotJson = {
   name :: String,
   version :: Version.Version,
 }
-SKIP_ME = "SKIP_ME"
-skippable = (a) => #[SKIP_ME, a]
-eschewSkippable = List.reduce(
-  (agg, x) => where(x) {
-    #[k, v] =>
-      k == SKIP_ME ? agg : List.append(x, agg)
-  },
-  [],
-)
-checkSkip = (encode, ww) => Maybe.isJust(ww) ? #["bin", encode(ww)] : skippable(P.string(SKIP_ME))
-dineDash = checkSkip(toJson)
+madlibToJson = (mdj) => {
+  fields = [
+    #["name", P.string(mdj.name)],
+    #["version", P.string(Version.showVersion(mdj.version))],
+    #["main", P.string(mdj.main)],
+  ]
+    ++ maybeField("madlibVersion", P.string, mdj.madlibVersion)
+    ++ maybeField("bin", P.string, mdj.bin)
+    ++ maybeField("dependencies", (deps) => P.list(toJson, deps), mdj.dependencies)
+    ++ maybeField("importAliases", P.dict(P.string), mdj.importAliases)
+    ++ maybeField("hooks", P.dict(P.string), mdj.hooks)
+  return P.object(fields)
+}
+serializeWithWidth :: Integer -> MadlibDotJson -> String
+export serializeWithWidth = (width, mdj) => pipe(
+  madlibToJson,
+  P.print(width),
+)(mdj)
+export serialize = serializeWithWidth(80)
 instance Json MadlibDotJson {
   fromJson = J.map8(
     (bin, dependencies, hooks, importAliases, madlibVersion, main, name, version) => Log
@@ -64,21 +80,7 @@ instance Json MadlibDotJson {
     J.field("version", fromJson),
   )
 
-  toJson = (x) => {
-    return pipe(
-      eschewSkippable,
-      P.object,
-    )([
-      checkSkip((v) => P.string(v ?? SKIP_ME), x.bin),
-      dineDash(x.dependencies),
-      dineDash(x.hooks),
-      dineDash(x.importAliases),
-      checkSkip((v) => P.string(v ?? "0.0.0"), x.madlibVersion),
-      #["main", P.string(x.main)],
-      #["name", P.string(x.name)],
-      #["version", toJson(x.version)],
-    ])
-  }
+  toJson = madlibToJson
 }
 makeMadlibDotJson :: String
   -> String
@@ -150,6 +152,7 @@ export writeWithWidth = (width, jj) => pipe(
   P.printJson(width),
 )(jj)
 export write = writeWithWidth(80)
+
 // ---- Serialization ----------------------------------------------------------
 // serializeDependency :: Dependency -> Value
 // serializeDependency = (dep) => {
@@ -195,26 +198,3 @@ export write = writeWithWidth(80)
 //
 //   return P.object(withMax)
 // }
-maybeField :: String -> (a -> Value) -> Maybe a -> List #[String, Value]
-maybeField = (key, fn, maybeVal) => where(maybeVal) {
-  Just(v) =>
-    [#[key, fn(v)]]
-
-  Nothing =>
-    []
-}
-serialize :: MadlibDotJson -> String
-export serialize = (mdj) => {
-  fields = [
-    #["name", P.string(mdj.name)],
-    #["version", P.string(Version.showVersion(mdj.version))],
-    #["main", P.string(mdj.main)],
-  ]
-    ++ maybeField("madlibVersion", P.string, mdj.madlibVersion)
-    ++ maybeField("bin", P.string, mdj.bin)
-    ++ maybeField("dependencies", (deps) => P.list(toJson, deps), mdj.dependencies)
-    ++ maybeField("importAliases", P.dict(P.string), mdj.importAliases)
-    ++ maybeField("hooks", P.dict(P.string), mdj.hooks)
-
-  return P.print(80, P.object(fields))
-}
