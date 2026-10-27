@@ -1,5 +1,5 @@
 {
-  "buildHash": "a690aa3e3a4d90fb71c251dfb3f71c6d",
+  "buildHash": "d8395fb113509763af73f441c312857f",
   "jsApi": {
     "apiAliases": {
       "src/Config.mad#Config": "{ exec :: String -> List String -> Wish CommandResult CommandResult, execWithConfig :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) (Response ByteArray), readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",

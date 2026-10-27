@@ -1,22 +1,20 @@
 {
-  "name": "mad-at-json",
-  "version": "0.4.0",
-  "main": "src/MadlibDotJson.mad",
-  "importAliases": {
-    ".": ".",
-    "model": "src",
-    "tools": "tools"
-  },
   "dependencies": [
     {
+      "description": "Study",
       "minVersion": "0.0.7",
-      "url": "https://github.com/brekk/study/archive/refs/tags/v0.0.7.zip",
-      "description": "Study"
+      "name": "Study",
+      "url": "https://github.com/brekk/study/archive/refs/tags/v0.0.7.zip"
     },
     {
+      "description": "PartyBus",
       "minVersion": "0.3.1",
-      "url": "https://github.com/brekk/party-bus/archive/refs/tags/v0.3.1.zip",
-      "description": "PartyBus"
+      "name": "PartyBus",
+      "url": "https://github.com/brekk/party-bus/archive/refs/tags/v0.3.1.zip"
     }
-  ]
+  ],
+  "importAliases": {".": ".", "model": "src", "tools": "tools"},
+  "main": "src/MadlibDotJson.mad",
+  "name": "mad-at-json",
+  "version": "0.5.0"
 }
