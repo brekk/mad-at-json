@@ -49,11 +49,11 @@ madlibToJson = (mdj) => {
     #["version", P.string(Version.showVersion(mdj.version))],
     #["main", P.string(mdj.main)],
   ]
-    ++ maybeField("madlibVersion", P.string, mdj.madlibVersion)
     ++ maybeField("bin", P.string, mdj.bin)
     ++ maybeField("dependencies", (deps) => P.list(toJson, deps), mdj.dependencies)
-    ++ maybeField("importAliases", P.dict(P.string), mdj.importAliases)
     ++ maybeField("hooks", P.dict(P.string), mdj.hooks)
+    ++ maybeField("importAliases", P.dict(P.string), mdj.importAliases)
+    ++ maybeField("madlibVersion", P.string, mdj.madlibVersion)
   return P.object(fields)
 }
 serializeWithWidth :: Integer -> MadlibDotJson -> String
@@ -64,42 +64,33 @@ export serializeWithWidth = (width, mdj) => pipe(
 export serialize = serializeWithWidth(80)
 instance Json MadlibDotJson {
   fromJson = J.map8(
-    (bin, dependencies, hooks, importAliases, madlibVersion, main, name, version) => Log
+    (name, version, main, bin, dependencies, hooks, importAliases, madlibVersion) => Log
       .env
       .parseDependency(
         "y u no work?",
         { bin, dependencies, hooks, importAliases, madlibVersion, main, name, version },
       ),
+    J.field("name", J.string),
+    J.field("version", fromJson),
+    J.field("main", J.string),
     J.field("bin", J.maybe(J.string)),
     Dependency.dependenciesParser,
     J.field("hooks", J.maybe(J.dict(J.string))),
     J.field("importAliases", J.maybe(J.dict(J.string))),
     J.field("madlibVersion", J.maybe(J.string)),
-    J.field("main", J.string),
-    J.field("name", J.string),
-    J.field("version", fromJson),
   )
 
   toJson = madlibToJson
 }
-makeMadlibDotJson :: String
-  -> String
-  -> Maybe String
-  -> Maybe (List Dependency)
-  -> String
-  -> Maybe String
-  -> Maybe (Dictionary String String)
-  -> Maybe (Dictionary String String)
-  -> J.Parser MadlibDotJson
 makeMadlibDotJson = (
   name,
   version,
-  madlibVersion,
-  dependencies,
   main,
   bin,
+  dependencies,
+  hooks,
   importAliases,
-  hooks
+  madlibVersion
 ) => where(Version.parse(version)) {
   Just(v) =>
     J.succeed({ name, version: v, madlibVersion, dependencies, main, bin, importAliases, hooks })
@@ -116,12 +107,12 @@ parser = J.chain8(
   makeMadlibDotJson,
   J.field("name", J.string),
   J.field("version", J.string),
-  J.maybe(J.field("madlibVersion", J.string)),
-  Dependency.dependenciesParser,
   J.field("main", J.string),
   J.maybe(J.field("bin", J.string)),
-  J.maybe(J.field("importAliases", J.dict(J.string))),
+  Dependency.dependenciesParser,
   J.maybe(J.field("hooks", J.dict(J.string))),
+  J.maybe(J.field("importAliases", J.dict(J.string))),
+  J.maybe(J.field("madlibVersion", J.string)),
 )
 parse :: String -> Wish String MadlibDotJson
 export parse = pipe(
