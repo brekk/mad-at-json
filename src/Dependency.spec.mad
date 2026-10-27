@@ -58,3 +58,12 @@ Study.report(
     ],
   ],
 )
+Study.report(
+  D._projectNameFromUrl,
+  "_projectNameFromUrl",
+  [
+    #["https://github.com/brekk/study/archive/refs/tags/v0.0.7.zip", "study"],
+    #["https://github.com/brekk/party-bus/archive/refs/tags/v0.3.1.zip", "party-bus"],
+    #["https://website.biz/whatever/nice/tags/v0.3.1.zip", "nice"],
+  ],
+)

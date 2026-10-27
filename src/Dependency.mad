@@ -7,7 +7,9 @@ import type { VersionRange } from "@model/Version"
 import J from "Json/Parse"
 import P from "Json/Print"
 import List from "List"
+import Maybe from "Maybe"
 import { Just, Nothing, fromMaybe } from "Maybe"
+import String from "String"
 import {} from "Wish"
 
 import Log from "@model/Log"
@@ -28,13 +30,41 @@ instance Json Dependency {
 
   toJson = serializeDependency
 }
+// this is clunky and assumes some github ish url, but hopefully is short-lived
+export _projectNameFromUrl = pipe(
+  String.split("/"),
+  List.drop(4),
+  List.nth(0),
+  Maybe.fromMaybe("???"),
+  Log.env.dependency("derived name"),
+)
+export _deriveNameIfMissing = (raw) => where(#[raw.name, raw.description]) {
+  #[Just(name), Just(description)] =>
+    do {
+      noDesc = String.isEmpty(description)
+      noName = String.isEmpty(name)
+      return if (noName) {
+        if (!noDesc) {
+          { ...raw, name: Just(description) }
+        } else {
+          { ...raw, name: Just(_projectNameFromUrl(raw.url)) }
+        }
+      } else {
+        raw
+      }
+    }
+
+  _ =>
+    raw
+}
 ensureName = (raw) => pipe(
-  descriptionAsName,
+  _deriveNameIfMissing,
+  descNameTuple,
   map((#[d, n]) => ({ ...raw, description: Just(d), name: Just(n) })),
   fromMaybe(raw),
 )(raw)
 // dap up your deps
-export construct = (url, description, maybeMinVersion, maybeMaxVersion, name) => pipe(
+export construct = (name, url, description, maybeMinVersion, maybeMaxVersion) => pipe(
   ensureName,
   Log.env.parseDependency("constructing"),
 )({
@@ -51,21 +81,21 @@ versionField = (key) => pipe(
 )(key)
 export dependencyParser = J.map5(
   construct,
+  J.maybe(J.field("name", J.string)),
   J.field("url", J.string),
   J.maybe(J.field("description", J.string)),
   versionField("minVersion"),
   versionField("maxVersion"),
-  J.maybe(J.field("name", J.string)),
 )
-export descriptionAsName = (x) => where(#[x.description, x.name]) {
+export descNameTuple = (x) => where(#[x.description, x.name]) {
   #[Just(d), Just(n)] =>
     Just(#[d, n])
 
-  #[Just(d), _] =>
-    Just(#[d, d])
-
-  #[_, Just(n)] =>
+  #[Nothing, Just(n)] =>
     Just(#[n, n])
+
+  #[Just(d), Nothing] =>
+    Just(#[d, d])
 
   _ =>
     Nothing
@@ -125,11 +155,8 @@ serializeDependency = (dep) => {
   )([toJsonName, toJsonDesc, toJsonMin, toJsonMax])
 
   // withName = toJsonName(dep, base)
-
   // withDesc = toJsonDesc(dep, withName)
-
   // withMin = toJsonMin(dep, withDesc)
-
   // withMax = toJsonMax(dep, withMin)
   // IO.pTrace("rawwwwrere", #[raw, withMax])
   return P.object(raw)
