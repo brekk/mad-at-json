@@ -1,126 +1,108 @@
 {
-  "buildHash": "199148285bfca050faccf7df749d829f",
+  "buildHash": "a690aa3e3a4d90fb71c251dfb3f71c6d",
   "jsApi": {
-    "apiInstances": [
-      "Scan Version",
-      "Comparable Version"
-    ],
     "apiAliases": {
-      "src/Parse/MadlibJson.mad#MadlibDotJson": "{ bin :: Maybe String, dependencies :: Maybe (List Dependency), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
       "src/Config.mad#Config": "{ exec :: String -> List String -> Wish CommandResult CommandResult, execWithConfig :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) (Response ByteArray), readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
-      "src/Parse/Dependency.mad#Dependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }"
+      "src/Parse/Dependency.mad#Dependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "src/Parse/MadlibJson.mad#MadlibDotJson": "{ bin :: Maybe String, dependencies :: Maybe (List Dependency), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }"
     },
+    "apiInstances": ["Scan Version", "Comparable Version"],
     "apiInterfaces": {},
     "apiNames": {
-      "parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
-      "src/Dependency.mad#printDependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> String",
-      "src/Version.mad#intersection": "VersionRange -> VersionRange -> VersionRange",
-      "src/Version.mad#bumpPatch": "Version -> Version",
-      "src/Parse/Dependency.mad#construct": "String -> a -> Maybe Version -> Maybe Version -> b -> { description :: a, name :: b, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
-      "src/Version.mad#patch": "Version -> Integer",
-      "src/Config.mad#defaultConfig": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
-      "src/Version.mad#printRange": "VersionRange -> String",
       "createDependency": "Maybe String -> String -> String -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "src/Dependency.mad#create": "Maybe String -> String -> String -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "src/Version.mad#min": "Version -> Version -> Version",
-      "createDependencyWithRange": "Maybe String -> Maybe String -> String -> Version -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "src/URL.mad#sanitizeUrl": "String -> String",
-      "src/Parse/Dependency.mad#dependencyParser": "Parser (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange })",
-      "parseDependency": "Parser (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange })",
-      "src/Version.mad#max": "Version -> Version -> Version",
-      "src/Version.mad#minor": "Version -> Integer",
-      "src/Parse/MadlibJson.mad#parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
-      "src/Version.mad#withinRange": "VersionRange -> Version -> Boolean",
-      "src/Version.mad#major": "Version -> Integer",
-      "src/Version.mad#showVersion": "Version -> String",
       "createDependencyWithImplicitRange": "Maybe String -> Maybe String -> String -> Maybe Version -> Maybe Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "src/Dependency.mad#createWithImplicitRange": "Maybe String -> Maybe String -> String -> Maybe Version -> Maybe Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "createDependencyWithRange": "Maybe String -> Maybe String -> String -> Version -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "parseDependency": "Parser (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange })",
       "printDependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> String",
+      "src/Config.mad#defaultConfig": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
+      "src/Dependency.mad#create": "Maybe String -> String -> String -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "src/Dependency.mad#createWithImplicitRange": "Maybe String -> Maybe String -> String -> Maybe Version -> Maybe Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
       "src/Dependency.mad#createWithRange": "Maybe String -> Maybe String -> String -> Version -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "src/Version.mad#bumpMajor": "Version -> Version",
-      "src/Version.mad#parse": "String -> Maybe Version",
-      "src/Version.mad#bump": "Bump -> Version -> Version",
+      "src/Dependency.mad#printDependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> String",
+      "src/Parse/Dependency.mad#construct": "String -> a -> Maybe Version -> Maybe Version -> b -> { description :: a, name :: b, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "src/Parse/Dependency.mad#dependencyParser": "Parser (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange })",
       "src/Parse/MadlibJson.mad#load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "src/Parse/MadlibJson.mad#parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "src/URL.mad#sanitizeUrl": "String -> String",
+      "src/Version.mad#bump": "Bump -> Version -> Version",
+      "src/Version.mad#bumpMajor": "Version -> Version",
+      "src/Version.mad#bumpMinor": "Version -> Version",
+      "src/Version.mad#bumpPatch": "Version -> Version",
       "src/Version.mad#createRange": "Maybe Version -> Maybe Version -> VersionRange",
-      "src/Version.mad#bumpMinor": "Version -> Version"
+      "src/Version.mad#intersection": "VersionRange -> VersionRange -> VersionRange",
+      "src/Version.mad#major": "Version -> Integer",
+      "src/Version.mad#max": "Version -> Version -> Version",
+      "src/Version.mad#min": "Version -> Version -> Version",
+      "src/Version.mad#minor": "Version -> Integer",
+      "src/Version.mad#parse": "String -> Maybe Version",
+      "src/Version.mad#patch": "Version -> Integer",
+      "src/Version.mad#printRange": "VersionRange -> String",
+      "src/Version.mad#showVersion": "Version -> String",
+      "src/Version.mad#withinRange": "VersionRange -> Version -> Boolean"
     },
     "apiTypes": {
-      "src/Version.mad#Version": [
-        "Version Integer Integer Integer"
-      ],
+      "src/Version.mad#Bump": ["Major", "Minor", "Patch"],
+      "src/Version.mad#Version": ["Version Integer Integer Integer"],
       "src/Version.mad#VersionRange": [
         "VersionRange Version Version",
         "FromVersion Version",
         "UntilVersion Version",
         "AnyVersion"
-      ],
-      "src/Version.mad#Bump": [
-        "Major",
-        "Minor",
-        "Patch"
       ]
     }
   },
   "llvmApi": {
-    "apiInstances": [
-      "Scan Version",
-      "Comparable Version"
-    ],
     "apiAliases": {
-      "src/Parse/MadlibJson.mad#MadlibDotJson": "{ bin :: Maybe String, dependencies :: Maybe (List Dependency), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
       "src/Config.mad#Config": "{ exec :: String -> List String -> Wish CommandResult CommandResult, execWithConfig :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) (Response ByteArray), readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
-      "src/Parse/Dependency.mad#Dependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }"
+      "src/Parse/Dependency.mad#Dependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "src/Parse/MadlibJson.mad#MadlibDotJson": "{ bin :: Maybe String, dependencies :: Maybe (List Dependency), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }"
     },
+    "apiInstances": ["Scan Version", "Comparable Version"],
     "apiInterfaces": {},
     "apiNames": {
-      "parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
-      "src/Dependency.mad#printDependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> String",
-      "src/Version.mad#intersection": "VersionRange -> VersionRange -> VersionRange",
-      "src/Version.mad#bumpPatch": "Version -> Version",
-      "src/Parse/Dependency.mad#construct": "String -> a -> Maybe Version -> Maybe Version -> b -> { description :: a, name :: b, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
-      "src/Version.mad#patch": "Version -> Integer",
-      "src/Config.mad#defaultConfig": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
-      "src/Version.mad#printRange": "VersionRange -> String",
       "createDependency": "Maybe String -> String -> String -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "src/Dependency.mad#create": "Maybe String -> String -> String -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "src/Version.mad#min": "Version -> Version -> Version",
-      "createDependencyWithRange": "Maybe String -> Maybe String -> String -> Version -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "src/URL.mad#sanitizeUrl": "String -> String",
-      "src/Parse/Dependency.mad#dependencyParser": "Parser (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange })",
-      "parseDependency": "Parser (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange })",
-      "src/Version.mad#max": "Version -> Version -> Version",
-      "src/Version.mad#minor": "Version -> Integer",
-      "src/Parse/MadlibJson.mad#parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
-      "src/Version.mad#withinRange": "VersionRange -> Version -> Boolean",
-      "src/Version.mad#major": "Version -> Integer",
-      "src/Version.mad#showVersion": "Version -> String",
       "createDependencyWithImplicitRange": "Maybe String -> Maybe String -> String -> Maybe Version -> Maybe Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "src/Dependency.mad#createWithImplicitRange": "Maybe String -> Maybe String -> String -> Maybe Version -> Maybe Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "createDependencyWithRange": "Maybe String -> Maybe String -> String -> Version -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "parseDependency": "Parser (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange })",
       "printDependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> String",
+      "src/Config.mad#defaultConfig": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} }",
+      "src/Dependency.mad#create": "Maybe String -> String -> String -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "src/Dependency.mad#createWithImplicitRange": "Maybe String -> Maybe String -> String -> Maybe Version -> Maybe Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
       "src/Dependency.mad#createWithRange": "Maybe String -> Maybe String -> String -> Version -> Version -> { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
-      "src/Version.mad#bumpMajor": "Version -> Version",
-      "src/Version.mad#parse": "String -> Maybe Version",
-      "src/Version.mad#bump": "Bump -> Version -> Version",
+      "src/Dependency.mad#printDependency": "{ description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange } -> String",
+      "src/Parse/Dependency.mad#construct": "String -> a -> Maybe Version -> Maybe Version -> b -> { description :: a, name :: b, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }",
+      "src/Parse/Dependency.mad#dependencyParser": "Parser (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange })",
       "src/Parse/MadlibJson.mad#load": "{ exec :: String -> List String -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, execWithConfig :: String -> List String -> { cwd :: String, env :: Dictionary String String } -> Wish { exitCode :: Integer, stderr :: String, stdout :: String } { exitCode :: Integer, stderr :: String, stdout :: String }, exists :: String -> Wish {} Boolean, getBytes :: String -> Wish (Error ByteArray) { body :: ByteArray, headers :: List Header, status :: Integer }, readDir :: String -> Wish Error (List String), readFile :: String -> Wish Error String, writeBytes :: String -> ByteArray -> Wish Error {}, writeFile :: String -> String -> Wish Error {} } -> String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "src/Parse/MadlibJson.mad#parse": "String -> Wish String { bin :: Maybe String, dependencies :: Maybe (List { description :: Maybe String, name :: Maybe String, sanitizedUrl :: String, url :: String, versionRange :: VersionRange }), hooks :: Maybe (Dictionary String String), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version }",
+      "src/URL.mad#sanitizeUrl": "String -> String",
+      "src/Version.mad#bump": "Bump -> Version -> Version",
+      "src/Version.mad#bumpMajor": "Version -> Version",
+      "src/Version.mad#bumpMinor": "Version -> Version",
+      "src/Version.mad#bumpPatch": "Version -> Version",
       "src/Version.mad#createRange": "Maybe Version -> Maybe Version -> VersionRange",
-      "src/Version.mad#bumpMinor": "Version -> Version"
+      "src/Version.mad#intersection": "VersionRange -> VersionRange -> VersionRange",
+      "src/Version.mad#major": "Version -> Integer",
+      "src/Version.mad#max": "Version -> Version -> Version",
+      "src/Version.mad#min": "Version -> Version -> Version",
+      "src/Version.mad#minor": "Version -> Integer",
+      "src/Version.mad#parse": "String -> Maybe Version",
+      "src/Version.mad#patch": "Version -> Integer",
+      "src/Version.mad#printRange": "VersionRange -> String",
+      "src/Version.mad#showVersion": "Version -> String",
+      "src/Version.mad#withinRange": "VersionRange -> Version -> Boolean"
     },
     "apiTypes": {
-      "src/Version.mad#Version": [
-        "Version Integer Integer Integer"
-      ],
+      "src/Version.mad#Bump": ["Major", "Minor", "Patch"],
+      "src/Version.mad#Version": ["Version Integer Integer Integer"],
       "src/Version.mad#VersionRange": [
         "VersionRange Version Version",
         "FromVersion Version",
         "UntilVersion Version",
         "AnyVersion"
-      ],
-      "src/Version.mad#Bump": [
-        "Major",
-        "Minor",
-        "Patch"
       ]
     }
   },

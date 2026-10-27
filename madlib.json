@@ -1,6 +1,6 @@
 {
   "name": "mad-at-json",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "main": "src/MadlibDotJson.mad",
   "importAliases": {
     ".": ".",
