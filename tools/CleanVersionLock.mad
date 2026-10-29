@@ -1,3 +1,4 @@
+import Dict from "Dictionary"
 import File from "File"
 import IO from "IO"
 import List from "List"
@@ -17,7 +18,18 @@ main = (args) => {
     Maybe.fromMaybe("madlib.json"),
     (raw) => pipe(
       VersionLock.load,
-      map(Log.tapped.versiondotlock("parsed", toJson)),
+      map(
+        Log
+          .tapped
+          .versiondotlock(
+            "parsed",
+            pipe(
+              .jsApi,
+              .apiAliases,
+              Dict.keys,
+            ),
+          ),
+      ),
       map(VersionLock.write),
       map(mappend($, "\n")),
       Wish.chainRej((_) => of("Unable to write file")),

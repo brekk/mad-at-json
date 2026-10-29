@@ -7,10 +7,13 @@ import { always } from "Function"
 import {} from "Json"
 import J from "Json/Parse"
 import P from "Json/Print"
+import List from "List"
+import { Just, Nothing } from "Maybe"
 import { bad, bichain, mapRej } from "Wish"
 
 import Q from "@model/JsonPrint"
 import _List from "@model/List"
+import Log from "@model/Log"
 import { baseProxy } from "@model/Proxy"
 
 
@@ -92,8 +95,20 @@ export loadWithProxy = (config, path) => pipe(
   ),
 )(path)
 export load = loadWithProxy(baseProxy)
+sortifyFields = (orig, ref, x) => {
+  Log.env.versiondotlock("huh", orig)
+  xsort = _List.makeSorterByPattern(FIELDS_IN_ORDER)
+  wsort = _List.makeSorterByPattern(orig)
+  return where(ref) {
+    Just(k) =>
+      List.sortBy(wsort, x)
+
+    _ =>
+      List.sortBy(xsort, x)
+  }
+}
 export writeWithWidth = (width, jj) => pipe(
   toJson,
-  Q.printWithSort(_List.sortByPattern(FIELDS_IN_ORDER), width),
+  Q.printWithFold(sortifyFields, width),
 )(jj)
 export write = writeWithWidth(80)

@@ -1,6 +1,7 @@
 import type { Value } from "Json/Value"
 
 import type { Comparison } from "Compare"
+import type { Maybe } from "Maybe"
 
 import Compare from "Compare"
 import Dictionary from "Dictionary"
@@ -15,6 +16,7 @@ import {
   JsonString,
 } from "Json/Value"
 import List from "List"
+import { Just, Nothing } from "Maybe"
 import {} from "Number"
 import PP from "PrettyPrint"
 import String from "String"
@@ -54,18 +56,17 @@ escapeString = (s) => {
     String.fromList,
   )(s)
 }
-enspace = pipe(
-  List.range(0),
-  map((_) => ' '),
-  String.fromList,
-)
-jsonToDocWithSortAndIndent :: Integer
-  -> (#[String, a] -> #[String, a] -> Comparison)
-  -> Value
-  -> PP.Doc
-export jsonToDocWithSortAndIndent = (idx, sortJsonFields, value) => {
+export alias KeyedFold a = List String -> Maybe String -> List a -> List a
+jsonToDocWithFoldAndIndent :: Integer -> Maybe String -> KeyedFold a -> Value -> PP.Doc
+export jsonToDocWithFoldAndIndent = (idx, ref, fold, value) => {
   jdx = idx < 0 ? idx : idx + 1
   doIndent = idx > 0
+  indentBy = doIndent ? jdx : 2
+  indento = pipe(
+    PP.hcat,
+    PP.nest(indentBy),
+  )
+  refold = jsonToDocWithFoldAndIndent(jdx, $, fold)
   return where(value) {
     JsonString(s) =>
       pipe(
@@ -90,62 +91,49 @@ export jsonToDocWithSortAndIndent = (idx, sortJsonFields, value) => {
       PP.group(
         PP.hcat([
           PP.lbracket,
-          PP.nest(
-            doIndent ? jdx : 2,
-            PP.hcat([
-              PP.linebreak,
-              PP.sepBy(
-                PP.hcat([PP.comma, PP.line]),
-                map(jsonToDocWithSortAndIndent(jdx, sortJsonFields), items),
-              ),
-            ]),
-          ),
+          indento([PP.linebreak, PP.sepBy(PP.hcat([PP.comma, PP.line]), map(refold(ref), items))]),
           PP.linebreak,
           PP.rbracket,
         ]),
       )
 
     JsonObject(fields) =>
-      PP.group(
-        PP.hcat([
-          PP.lbrace,
-          PP.nest(
-            doIndent ? jdx : 2,
-            PP.hcat([
+      do {
+        ff = Dictionary.keys(fields)
+        return PP.group(
+          PP.hcat([
+            PP.lbrace,
+            indento([
               PP.linebreak,
               PP.sepBy(
                 PP.hcat([PP.comma, PP.line]),
                 map(
-                  (f) => PP.hcat([
-                    PP.text(`"${Tuple.fst(f)}"`),
-                    PP.colon,
-                    PP.space,
-                    jsonToDocWithSortAndIndent(jdx, sortJsonFields, Tuple.snd(f)),
-                  ]),
+                  (#[k, v]) => PP.hcat([PP.text(`"${k}"`), PP.colon, PP.space, refold(Just(k), v)]),
                   pipe(
                     Dictionary.toList,
-                    List.sortBy(sortJsonFields),
+                    fold(ff, ref),
                   )(fields),
                 ),
               ),
             ]),
-          ),
-          PP.linebreak,
-          PP.rbrace,
-        ]),
-      )
+            PP.linebreak,
+            PP.rbrace,
+          ]),
+        )
+      }
   }
 }
 object :: List #[String, Value] -> Value
 export object = (items) => JsonObject(Dictionary.fromList(items))
-printWithSort :: (a -> a -> Comparison) -> Integer -> Value -> String
-export printWithSort = (sort, width, value) => pipe(
-  jsonToDocWithSortAndIndent(0, sort),
+printWithFold :: KeyedFold a -> Integer -> Value -> String
+export printWithFold = (fold, width, value) => pipe(
+  jsonToDocWithFoldAndIndent(0, Nothing, fold),
   PP.prettyPrint(width),
 )(value)
+// List.sortBy(sortJsonFields),
 export descending = (a, b) => where(#[a, b]) {
   #[#[k1, v1], #[k2, v2]] =>
-    k1 < k2 ? Compare.LT : Compare.GT
+    k1 < k2 ? Compare.LT : k1 == k2 ? Compare.EQ : Compare.GT
 }
 export ascending = (a, b) => where(descending(a, b)) {
   Compare.LT =>
@@ -157,5 +145,6 @@ export ascending = (a, b) => where(descending(a, b)) {
   Compare.EQ =>
     Compare.EQ
 }
-print = printWithSort(descending)
+// sort the keys alphanumerically, independent of their parent key value
+print = printWithFold((_, _, list) => List.sortBy(descending, list))
 export printJson = print

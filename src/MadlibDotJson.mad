@@ -66,16 +66,18 @@ export madlibToJson = (mdj) => {
     ++ maybeField("madlibVersion", P.string, mdj.madlibVersion)
   return P.object(fields)
 }
-serializeWithSortAndWidth :: (a -> a -> Comparison) -> Integer -> MadlibDotJson -> String
+serializeWithSortAndWidth :: Q.KeyedFold a -> Integer -> MadlibDotJson -> String
 export serializeWithSortAndWidth = (sort, width, mdj) => pipe(
   madlibToJson,
-  Q.printWithSort(sort, width),
+  Q.printWithFold(sort, width),
 )(mdj)
 FIELDS_IN_ORDER = List.concat(
   ["name", "version", "main", "bin", "importAliases", "dependencies", "hooks", "madlibVersion"],
   Dependency.FIELDS_IN_ORDER,
 )
-export serializeWithWidth = serializeWithSortAndWidth(_List.sortByPattern(FIELDS_IN_ORDER))
+export serializeWithWidth = serializeWithSortAndWidth(
+  (_, _, y) => List.sortBy(_List.makeSorterByPattern(FIELDS_IN_ORDER), y),
+)
 export serialize = serializeWithWidth(80)
 export serializeWithSort = serializeWithSortAndWidth($, 80)
 instance Json MadlibDotJson {
