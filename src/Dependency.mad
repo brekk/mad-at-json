@@ -18,6 +18,8 @@ import Version from "@model/Version"
 
 
 
+// we skip name here because it gets added upstream
+export FIELDS_IN_ORDER = ["description", "url", "sanitizedUrl", "minVersion", "maxVersion"]
 export alias Dependency = {
   description :: Maybe String,
   name :: Maybe String,
@@ -68,10 +70,10 @@ export construct = (name, url, description, maybeMinVersion, maybeMaxVersion) =>
   ensureName,
   Log.env.parseDependency("constructing"),
 )({
+  name,
   url,
   description,
   versionRange: Version.createRange(maybeMinVersion, maybeMaxVersion),
-  name,
   sanitizedUrl: sanitizeUrl(url),
 })
 versionField = (key) => pipe(
@@ -105,11 +107,11 @@ export dependenciesParser = J.maybe(J.field("dependencies", J.list(dependencyPar
 export createWithName = (name, url) => pipe(
   ensureName,
 )({
-  url,
-  sanitizedUrl: sanitizeUrl(url),
-  versionRange: Version.AnyVersion,
-  description: Nothing,
   name,
+  url,
+  description: Nothing,
+  versionRange: Version.AnyVersion,
+  sanitizedUrl: sanitizeUrl(url),
 })
 export create = createWithName(Nothing)
 toJsonName = (dep, base) => where(dep.name) {
@@ -147,17 +149,11 @@ toJsonMax = (dep, base) => where(dep.versionRange) {
     base
 }
 serializeDependency :: Dependency -> Value
-serializeDependency = (dep) => {
+export serializeDependency = (dep) => {
   base = [#["url", P.string(dep.url)]]
   raw = pipe(
     map((fn) => fn(dep)),
     List.reduce((agg, fn) => fn(agg), base),
   )([toJsonName, toJsonDesc, toJsonMin, toJsonMax])
-
-  // withName = toJsonName(dep, base)
-  // withDesc = toJsonDesc(dep, withName)
-  // withMin = toJsonMin(dep, withDesc)
-  // withMax = toJsonMax(dep, withMin)
-  // IO.pTrace("rawwwwrere", #[raw, withMax])
   return P.object(raw)
 }

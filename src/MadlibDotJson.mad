@@ -1,13 +1,15 @@
 import type { Value } from "Json/Value"
 
+import type { Comparison } from "Compare"
 import type { Maybe } from "Maybe"
 import type { Wish } from "Wish"
 
 import type { Dependency } from "@model/Dependency"
 import type { Proxy } from "@model/Proxy"
 
+import Compare from "Compare"
+import Dict from "Dictionary"
 import { Left, Right } from "Either"
-import File from "File"
 import { always } from "Function"
 import {} from "Json"
 import J from "Json/Parse"
@@ -19,6 +21,8 @@ import Wish from "Wish"
 import { bad, mapRej } from "Wish"
 
 import Dependency from "@model/Dependency"
+import Q from "@model/JsonPrint"
+import _List from "@model/List"
 import Log from "@model/Log"
 import { baseProxy } from "@model/Proxy"
 import Version from "@model/Version"
@@ -43,42 +47,39 @@ export alias MadlibDotJson = {
   name :: String,
   version :: Version.Version,
 }
-madlibToJson = (mdj) => {
+export madlibToJson = (mdj) => {
   fields = [
     #["name", P.string(mdj.name)],
     #["version", P.string(Version.showVersion(mdj.version))],
     #["main", P.string(mdj.main)],
   ]
     ++ maybeField("bin", P.string, mdj.bin)
-    ++ maybeField("dependencies", (deps) => P.list(toJson, deps), mdj.dependencies)
+    ++ maybeField(
+      "dependencies",
+      (deps) => pipe(
+        P.list(Dependency.serializeDependency),
+      )(deps),
+      mdj.dependencies,
+    )
     ++ maybeField("hooks", P.dict(P.string), mdj.hooks)
     ++ maybeField("importAliases", P.dict(P.string), mdj.importAliases)
     ++ maybeField("madlibVersion", P.string, mdj.madlibVersion)
   return P.object(fields)
 }
-serializeWithWidth :: Integer -> MadlibDotJson -> String
-export serializeWithWidth = (width, mdj) => pipe(
+serializeWithSortAndWidth :: (a -> a -> Comparison) -> Integer -> MadlibDotJson -> String
+export serializeWithSortAndWidth = (sort, width, mdj) => pipe(
   madlibToJson,
-  P.print(width),
+  Q.printWithSort(sort, width),
 )(mdj)
+FIELDS_IN_ORDER = List.concat(
+  ["name", "version", "main", "bin", "importAliases", "dependencies", "hooks", "madlibVersion"],
+  Dependency.FIELDS_IN_ORDER,
+)
+export serializeWithWidth = serializeWithSortAndWidth(_List.sortByPattern(FIELDS_IN_ORDER))
 export serialize = serializeWithWidth(80)
+export serializeWithSort = serializeWithSortAndWidth($, 80)
 instance Json MadlibDotJson {
-  fromJson = J.map8(
-    (name, version, main, bin, dependencies, hooks, importAliases, madlibVersion) => Log
-      .env
-      .parseDependency(
-        "y u no work?",
-        { bin, dependencies, hooks, importAliases, madlibVersion, main, name, version },
-      ),
-    J.field("name", J.string),
-    J.field("version", fromJson),
-    J.field("main", J.string),
-    J.field("bin", J.maybe(J.string)),
-    Dependency.dependenciesParser,
-    J.field("hooks", J.maybe(J.dict(J.string))),
-    J.field("importAliases", J.maybe(J.dict(J.string))),
-    J.field("madlibVersion", J.maybe(J.string)),
-  )
+  fromJson = parser
 
   toJson = madlibToJson
 }
@@ -138,54 +139,4 @@ Error: `,
   ),
 )(path)
 export load = loadWithProxy(baseProxy)
-export writeWithWidth = (width, jj) => pipe(
-  toJson,
-  P.printJson(width),
-)(jj)
-export write = writeWithWidth(80)
-
-// ---- Serialization ----------------------------------------------------------
-// serializeDependency :: Dependency -> Value
-// serializeDependency = (dep) => {
-//   base = [#["url", P.string(dep.url)]]
-//
-//   withName = where(dep.name) {
-//     Just(name) =>
-//       [...base, #["name", P.string(name)]]
-//
-//     Nothing =>
-//       base
-//   }
-//
-//   withDesc = where(dep.description) {
-//     Just(desc) =>
-//       [...withName, #["description", P.string(desc)]]
-//
-//     Nothing =>
-//       withName
-//   }
-//
-//   withMin = where(dep.versionRange) {
-//     Version.VersionRange(minV, _) =>
-//       [...withDesc, #["minVersion", P.string(Version.showVersion(minV))]]
-//
-//     Version.FromVersion(minV) =>
-//       [...withDesc, #["minVersion", P.string(Version.showVersion(minV))]]
-//
-//     _ =>
-//       withDesc
-//   }
-//
-//   withMax = where(dep.versionRange) {
-//     Version.VersionRange(_, maxV) =>
-//       [...withMin, #["maxVersion", P.string(Version.showVersion(maxV))]]
-//
-//     Version.UntilVersion(maxV) =>
-//       [...withMin, #["maxVersion", P.string(Version.showVersion(maxV))]]
-//
-//     _ =>
-//       withMin
-//   }
-//
-//   return P.object(withMax)
-// }
+export write = serializeWithWidth(80)

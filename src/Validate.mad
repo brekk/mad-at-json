@@ -1,10 +1,10 @@
 import type { Maybe } from "Maybe"
 
-import type { Context, VersionInfo } from "./Context"
-import type { Dependency } from "./Dependency"
-import type { MadlibDotJson } from "./MadlibDotJson"
-import type { VersionRange } from "./Version"
-import type { VersionDotLock } from "./VersionDotLock"
+import type { Context, VersionInfo } from "@model/Context"
+import type { Dependency } from "@model/Dependency"
+import type { MadlibDotJson } from "@model/MadlibDotJson"
+import type { VersionRange } from "@model/Version"
+import type { VersionDotLock } from "@model/VersionDotLock"
 
 import Fn from "Function"
 import IO from "IO"
@@ -13,6 +13,7 @@ import { andDo } from "Monad"
 
 import Color from "@model/Color"
 import { findByName, updateEntry } from "@model/Context"
+import Log from "@model/Log"
 import { intersectRanges, isInRange } from "@model/Version"
 
 
@@ -148,11 +149,10 @@ export printError = (a, error) => where(error) {
   MadlibDotJsonCouldNotBeLoaded(msg) =>
     IO.putLineAndPass(`  - ${Color.red(msg)}`, a)
 }
-printWarning :: a -> Warning -> a
-export printWarning = (a, warning) => IO.putLineAndPass(
-  `  - ${Color.yellow(warningMessage(warning))}`,
-  a,
-)
+printWarning :: Show a => a -> Warning -> a
+export printWarning = (a, warning) => pipe(
+  IO.putLineAndPass(`  - ${Color.yellow(warningMessage(warning))}`),
+)(a)
 mapError :: (Error -> Error) -> Validate a -> Validate a
 export mapError = (f, v) => where(v) {
   ValidationError(warnings, e, maybeA) =>
@@ -354,10 +354,9 @@ validateHashes = (validationInput) => {
       Fn.ifElse(
         pipe(
           Fn.equals(validationInput.computedVersionHash),
-          Fn.not,
         ),
-        K(NotValid([InvalidVersionHash], {})),
         K(Valid({})),
+        K(NotValid([InvalidVersionHash], {})),
         versionDotLock.versionHash,
       )
 

@@ -11,6 +11,7 @@ import String from "String"
 import { fulfill } from "Wish"
 
 import Graph from "@model/Graph"
+import Log from "@model/Log"
 import { baseProxy } from "@model/Proxy"
 import { run } from "@model/Run"
 import Upgrade from "@model/Upgrade"

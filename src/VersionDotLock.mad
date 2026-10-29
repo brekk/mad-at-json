@@ -3,17 +3,19 @@ import type { Wish } from "Wish"
 import type { Proxy } from "@model/Proxy"
 
 import { Left, Right } from "Either"
-import File from "File"
 import { always } from "Function"
 import {} from "Json"
 import J from "Json/Parse"
 import P from "Json/Print"
 import { bad, bichain, mapRej } from "Wish"
 
+import Q from "@model/JsonPrint"
+import _List from "@model/List"
 import { baseProxy } from "@model/Proxy"
 
 
 
+FIELDS_IN_ORDER = ["apiInstances", "apiAliases", "apiInterfaces", "apiNames", "apiTypes"]
 export alias PublicAPI = {
   apiAliases :: Dictionary String String,
   apiInstances :: List String,
@@ -25,8 +27,8 @@ instance Json PublicAPI {
   fromJson = apiParser
 
   toJson = ({ apiAliases, apiInstances, apiInterfaces, apiNames, apiTypes }) => P.object([
-    #["apiAliases", toJson(apiAliases)],
     #["apiInstances", toJson(apiInstances)],
+    #["apiAliases", toJson(apiAliases)],
     #["apiInterfaces", toJson(apiInterfaces)],
     #["apiNames", toJson(apiNames)],
     #["apiTypes", toJson(apiTypes)],
@@ -50,14 +52,14 @@ instance Json VersionDotLock {
 }
 apiParser :: J.Parser PublicAPI
 apiParser = J.map5(
-  (apiNames, apiInstances, apiAliases, apiTypes, apiInterfaces) => (
+  (apiInstances, apiAliases, apiInterfaces, apiNames, apiTypes) => (
     { apiNames, apiInstances, apiAliases, apiTypes, apiInterfaces }
   ),
-  J.field("apiNames", J.dict(J.string)),
   J.field("apiInstances", J.list(J.string)),
   J.field("apiAliases", J.dict(J.string)),
-  J.field("apiTypes", J.dict(J.list(J.string))),
   J.field("apiInterfaces", J.dict(J.dict(J.string))),
+  J.field("apiNames", J.dict(J.string)),
+  J.field("apiTypes", J.dict(J.list(J.string))),
 )
 parser :: J.Parser VersionDotLock
 parser = J.map4(
@@ -92,6 +94,6 @@ export loadWithProxy = (config, path) => pipe(
 export load = loadWithProxy(baseProxy)
 export writeWithWidth = (width, jj) => pipe(
   toJson,
-  P.printJson(width),
+  Q.printWithSort(_List.sortByPattern(FIELDS_IN_ORDER), width),
 )(jj)
 export write = writeWithWidth(80)

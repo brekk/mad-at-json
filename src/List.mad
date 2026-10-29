@@ -1,0 +1,21 @@
+import Compare from "Compare"
+import Dict from "Dictionary"
+import List from "List"
+import { Just } from "Maybe"
+
+
+
+export sortByPattern = (pattern) => {
+  fieldRanks :: Dictionary String Integer
+  fieldRanks = pipe(
+    List.zip($, List.range(0, List.length(pattern))),
+    Dict.fromList,
+  )(pattern)
+  ranked :: String -> Integer
+  ranked = (k) => Dict.get(k, fieldRanks) ?? 9999999
+  compareByRanked = (#[k, v], #[k2, v2]) => where(#[ranked(k), ranked(k2)]) {
+    #[ra, rb] =>
+      ra < rb ? Compare.LT : ra > rb ? Compare.GT : Compare.EQ
+  }
+  return compareByRanked
+}

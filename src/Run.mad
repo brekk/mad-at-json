@@ -265,7 +265,7 @@ downloadedDependency = where {
 announceInvalid = ({ reportedWarning }, { madlibDotJson: mj }, warnings) => List.forEach(
   pipe(
     warningMessage,
-    mappend(mj.name ++ ": "),
+    mappend(mj.name ++ "@" ++ Version.showVersion(mj.version) ++ ": "),
     reportedWarning,
   ),
   warnings,

@@ -1,0 +1,161 @@
+import type { Value } from "Json/Value"
+
+import type { Comparison } from "Compare"
+
+import Compare from "Compare"
+import Dictionary from "Dictionary"
+import JP from "Json/Print"
+import {
+  JsonArray,
+  JsonBoolean,
+  JsonFloat,
+  JsonInteger,
+  JsonNull,
+  JsonObject,
+  JsonString,
+} from "Json/Value"
+import List from "List"
+import {} from "Number"
+import PP from "PrettyPrint"
+import String from "String"
+import Tuple from "Tuple"
+
+
+
+// Pretty Printer
+// --------------
+
+escapeString :: String -> String
+escapeString = (s) => {
+  go :: List Char -> List Char
+  go = (chars) => where(chars) {
+    ['"', ...cs] =>
+      ['\\', '"', ...go(cs)]
+
+    ['\n', ...cs] =>
+      ['\\', 'n', ...go(cs)]
+
+    ['\t', ...cs] =>
+      ['\\', 't', ...go(cs)]
+
+    ['\r', ...cs] =>
+      ['\\', 'r', ...go(cs)]
+
+    [c, ...cs] =>
+      [c, ...go(cs)]
+
+    [] =>
+      []
+  }
+
+  return pipe(
+    String.toList,
+    go,
+    String.fromList,
+  )(s)
+}
+enspace = pipe(
+  List.range(0),
+  map((_) => ' '),
+  String.fromList,
+)
+jsonToDocWithSortAndIndent :: Integer
+  -> (#[String, a] -> #[String, a] -> Comparison)
+  -> Value
+  -> PP.Doc
+export jsonToDocWithSortAndIndent = (idx, sortJsonFields, value) => {
+  jdx = idx < 0 ? idx : idx + 1
+  doIndent = idx > 0
+  return where(value) {
+    JsonString(s) =>
+      pipe(
+        escapeString,
+        PP.text,
+        PP.quotes,
+      )(s)
+
+    JsonBoolean(b) =>
+      PP.text(show(b))
+
+    JsonInteger(i) =>
+      PP.text(show(i))
+
+    JsonFloat(f) =>
+      PP.text(show(f))
+
+    JsonNull =>
+      PP.text("null")
+
+    JsonArray(items) =>
+      PP.group(
+        PP.hcat([
+          PP.lbracket,
+          PP.nest(
+            doIndent ? jdx : 2,
+            PP.hcat([
+              PP.linebreak,
+              PP.sepBy(
+                PP.hcat([PP.comma, PP.line]),
+                map(jsonToDocWithSortAndIndent(jdx, sortJsonFields), items),
+              ),
+            ]),
+          ),
+          PP.linebreak,
+          PP.rbracket,
+        ]),
+      )
+
+    JsonObject(fields) =>
+      PP.group(
+        PP.hcat([
+          PP.lbrace,
+          PP.nest(
+            doIndent ? jdx : 2,
+            PP.hcat([
+              PP.linebreak,
+              PP.sepBy(
+                PP.hcat([PP.comma, PP.line]),
+                map(
+                  (f) => PP.hcat([
+                    PP.text(`"${Tuple.fst(f)}"`),
+                    PP.colon,
+                    PP.space,
+                    jsonToDocWithSortAndIndent(jdx, sortJsonFields, Tuple.snd(f)),
+                  ]),
+                  pipe(
+                    Dictionary.toList,
+                    List.sortBy(sortJsonFields),
+                  )(fields),
+                ),
+              ),
+            ]),
+          ),
+          PP.linebreak,
+          PP.rbrace,
+        ]),
+      )
+  }
+}
+object :: List #[String, Value] -> Value
+export object = (items) => JsonObject(Dictionary.fromList(items))
+printWithSort :: (a -> a -> Comparison) -> Integer -> Value -> String
+export printWithSort = (sort, width, value) => pipe(
+  jsonToDocWithSortAndIndent(0, sort),
+  PP.prettyPrint(width),
+)(value)
+export descending = (a, b) => where(#[a, b]) {
+  #[#[k1, v1], #[k2, v2]] =>
+    k1 < k2 ? Compare.LT : Compare.GT
+}
+export ascending = (a, b) => where(descending(a, b)) {
+  Compare.LT =>
+    Compare.GT
+
+  Compare.GT =>
+    Compare.LT
+
+  Compare.EQ =>
+    Compare.EQ
+}
+print = printWithSort(descending)
+export printJson = print

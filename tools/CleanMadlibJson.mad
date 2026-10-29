@@ -1,0 +1,27 @@
+import File from "File"
+import IO from "IO"
+import List from "List"
+import Maybe from "Maybe"
+import Wish from "Wish"
+
+import Log from "@model/Log"
+import MadJson from "@model/MadlibDotJson"
+
+
+
+main = (args) => {
+  pipe(
+    List.drop(1),
+    List.nth(0),
+    Maybe.fromMaybe("madlib.json"),
+    (raw) => pipe(
+      MadJson.load,
+      map(Log.tapped.versiondotlock("parsed", toJson)),
+      map(MadJson.write),
+      Wish.chainRej((_) => of("Unable to write file")),
+      chain(File.write(raw)),
+      map(Log.env.versiondotlock("jsoned")),
+    )(raw),
+    Wish.fulfill((e) => { IO.pTrace("bad", e) }, (x) => { IO.pTrace("good", x) }),
+  )(args)
+}
