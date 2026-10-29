@@ -18,6 +18,7 @@ main = (args) => {
       MadJson.load,
       map(Log.tapped.versiondotlock("parsed", toJson)),
       map(MadJson.write),
+      map(mappend($, "\n")),
       Wish.chainRej((_) => of("Unable to write file")),
       chain(File.write(raw)),
       map(Log.env.versiondotlock("jsoned")),
