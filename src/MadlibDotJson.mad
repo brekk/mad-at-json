@@ -1,22 +1,20 @@
 import type { Value } from "Json/Value"
 
-import type { Comparison } from "Compare"
 import type { Maybe } from "Maybe"
 import type { Wish } from "Wish"
 
 import type { Dependency } from "@model/Dependency"
 import type { Proxy } from "@model/Proxy"
 
-import Compare from "Compare"
-import Dict from "Dictionary"
 import { Left, Right } from "Either"
+import Fn from "Function"
 import { always } from "Function"
 import {} from "Json"
 import J from "Json/Parse"
 import P from "Json/Print"
 import List from "List"
 import Maybe from "Maybe"
-import { Just, Nothing } from "Maybe"
+import { Just, Nothing, fromMaybe } from "Maybe"
 import Wish from "Wish"
 import { bad, mapRej } from "Wish"
 
@@ -47,6 +45,14 @@ export alias MadlibDotJson = {
   name :: String,
   version :: Version.Version,
 }
+export MADLIB_OPTIONAL_BASE = {
+  bin: Nothing,
+  dependencies: Nothing,
+  hooks: Nothing,
+  importAliases: Nothing,
+  madlibVersion: Nothing,
+}
+export create = (name, version, main) => ({ ...MADLIB_OPTIONAL_BASE, name, version, main })
 export madlibToJson = (mdj) => {
   fields = [
     #["name", P.string(mdj.name)],
@@ -142,3 +148,45 @@ Error: `,
 )(path)
 export load = loadWithProxy(baseProxy)
 export write = serializeWithWidth(80)
+hasDependency :: String -> MadlibDotJson -> Boolean
+export hasDependency = (dep, madjson) => pipe(
+  .dependencies,
+  Log.env.madatjson("dependencies, they're all we have"),
+  map(
+    pipe(
+      pipe(
+        Dependency.someDepByName,
+      )(dep),
+      Log.env.madatjson(" but is it any good?"),
+    ),
+  ),
+  fromMaybe(false),
+)(madjson)
+_insertDependency :: Dependency -> MadlibDotJson -> MadlibDotJson
+export _insertDependency = (dep, madjson) => pipe(
+  .dependencies,
+  where {
+    Just(deps) =>
+      (
+        {
+          ...madjson,
+          dependencies: pipe(
+            List.append(dep),
+            Just,
+          )(deps),
+        }
+      )
+
+    _ =>
+      madjson
+  },
+)(madjson)
+export ensureDependency = (dep, madjson) => Fn.unless(
+  hasDependency(dep.name ?? "?"),
+  _insertDependency(dep),
+)(madjson)
+ensureConstructedDependency :: String -> String -> String -> MadlibDotJson -> MadlibDotJson
+export ensureConstructedDependency = (desc, name, url, madjson) => ensureDependency(
+  Dependency.createWithNameAndDescription(Just(desc), Just(name), url),
+  madjson,
+)

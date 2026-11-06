@@ -67,3 +67,11 @@ Study.report(
     #["https://website.biz/whatever/nice/tags/v0.3.1.zip", "nice"],
   ],
 )
+Study.report(
+  D.nameIs("whatever"),
+  "nameIs",
+  [
+    #[D.createWithName(Just("whatever"), "https://website.biz/whatever"), true],
+    #[D.createWithName(Nothing, "https://website.biz/whatever"), false],
+  ],
+)

@@ -1,3 +1,5 @@
+import type { MadlibDotJson } from "@model/MadlibDotJson"
+
 import ByteArray from "ByteArray"
 import { always } from "Function"
 import { OK } from "Http"
@@ -5,7 +7,11 @@ import { Just, Nothing } from "Maybe"
 import { ErrorWithMessage, assertEquals, test } from "Test"
 import { bad, bichain, good } from "Wish"
 
+import Study from "Study"
+
+import Dependency from "@model/Dependency"
 import { loadWithProxy, parse } from "@model/MadlibDotJson"
+import MadAt from "@model/MadlibDotJson"
 import { fakeProxy } from "@model/Proxy"
 import { sanitizeUrl } from "@model/URL"
 import { AnyVersion } from "@model/Version"
@@ -119,4 +125,18 @@ test(
       ),
     )("madlib.json")
   },
+)
+dep = Dependency.createWithNameAndDescription(
+  Just("whatever description"),
+  Just("whatever"),
+  "https://madlib.space/grimoire/whatever@2.0.0",
+)
+MADLIB_MINIMAL :: MadlibDotJson
+MADLIB_MINIMAL = MadAt.create("SamplePackage", Version(0, 1, 7), "src/Main.mad")
+MADLIB_MINIMAL_WITH_DEPS :: MadlibDotJson
+MADLIB_MINIMAL_WITH_DEPS = { ...MADLIB_MINIMAL, dependencies: Just([dep]) }
+Study.report(
+  MadAt.hasDependency($, MADLIB_MINIMAL_WITH_DEPS),
+  "hasDependency",
+  [#["whatever", true], #["doorbell", false]],
 )

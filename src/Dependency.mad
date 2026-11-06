@@ -104,15 +104,16 @@ export descNameTuple = (x) => where(#[x.description, x.name]) {
 }
 dependenciesParser :: J.Parser (Maybe (List Dependency))
 export dependenciesParser = J.maybe(J.field("dependencies", J.list(dependencyParser)))
-export createWithName = (name, url) => pipe(
+export createWithNameAndDescription = (desc, name, url) => pipe(
   ensureName,
 )({
   name,
   url,
-  description: Nothing,
+  description: desc,
   versionRange: Version.AnyVersion,
   sanitizedUrl: sanitizeUrl(url),
 })
+export createWithName = createWithNameAndDescription(Nothing)
 export create = createWithName(Nothing)
 toJsonName = (dep, base) => where(dep.name) {
   Just(name) =>
@@ -157,3 +158,12 @@ export serializeDependency = (dep) => {
   )([toJsonName, toJsonDesc, toJsonMin, toJsonMax])
   return P.object(raw)
 }
+alias Depcheck a = a -> Dependency -> Boolean
+nameIs :: Depcheck String
+export nameIs = (expected, { name: n }) => (expected == (n ?? "__unmatched__"))
+_someDepBy :: Depcheck String -> String -> List Dependency -> Boolean
+export _someDepBy = (by, depString, x) => pipe(
+  List.any(by(depString)),
+)(x)
+someDepByName :: String -> List Dependency -> Boolean
+export someDepByName = _someDepBy(nameIs)
