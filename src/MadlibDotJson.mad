@@ -151,13 +151,13 @@ export write = serializeWithWidth(80)
 hasDependency :: String -> MadlibDotJson -> Boolean
 export hasDependency = (dep, madjson) => pipe(
   .dependencies,
-  Log.env.madatjson("dependencies, they're all we have"),
+  Log.env.madAtJson("dependencies, they're all we have"),
   map(
     pipe(
       pipe(
         Dependency.someDepByName,
       )(dep),
-      Log.env.madatjson(" but is it any good?"),
+      Log.env.madAtJson(" but is it any good?"),
     ),
   ),
   fromMaybe(false),

@@ -96,7 +96,7 @@ export loadWithProxy = (config, path) => pipe(
 )(path)
 export load = loadWithProxy(baseProxy)
 sortifyFields = (orig, ref, x) => {
-  Log.env.versiondotlock("huh", orig)
+  Log.env.versionDotLock("huh", orig)
   xsort = _List.makeSorterByPattern(FIELDS_IN_ORDER)
   wsort = _List.makeSorterByPattern(orig)
   return where(ref) {
